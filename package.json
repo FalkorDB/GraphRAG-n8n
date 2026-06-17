@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-falkordb-graphrag",
-  "version": "0.1.0",
+  "version": "0.0.0-dev",
   "description": "n8n community node — wraps the FalkorDB GraphRAG SDK for knowledge-graph ingestion and retrieval.",
   "keywords": [
     "n8n-community-node-package",
