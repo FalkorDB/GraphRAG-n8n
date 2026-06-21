@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-falkordb-graphrag",
-  "version": "0.0.0-dev",
+  "version": "1.0.0",
   "description": "n8n community node — wraps the FalkorDB GraphRAG SDK for knowledge-graph ingestion and retrieval.",
   "keywords": [
     "n8n-community-node-package",
@@ -26,10 +26,14 @@
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "files": [
-    "dist"
+    "dist",
+    "graphrag_runner.py"
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,
@@ -37,7 +41,8 @@
       "dist/credentials/FalkorDbGraphRagApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/GraphRag/GraphRag.node.js"
+      "dist/nodes/GraphRag/GraphRag.node.js",
+      "dist/nodes/GraphRagAction/GraphRagAction.node.js"
     ]
   },
   "devDependencies": {
@@ -46,12 +51,10 @@
     "gulp": "^4.0.2",
     "n8n-workflow": "*",
     "prettier": "^3.3.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "n8n-workflow": "*"
-  },
-  "dependencies": {
-    "falkordb": "^6.6.2"
   }
 }

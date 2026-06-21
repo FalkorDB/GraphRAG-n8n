@@ -1,0 +1,141 @@
+{
+  "name": "06 — Tool: Ingest Text",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { chatInput: \"Please ingest the following text into the knowledge graph:\\n\\nAcme Corporation is headquartered in San Francisco and was founded by John Smith in 2010. The company develops cloud infrastructure software used by over 500 enterprise clients worldwide. Jane Doe serves as the Chief Technology Officer and leads a team of 200 engineers. Acme's flagship product, CloudCore, integrates with Amazon Web Services and Microsoft Azure. In 2023, Acme acquired DataBridge Inc., a startup based in Austin, Texas, for $120 million. DataBridge was co-founded by Robert Lee and specializes in real-time data pipeline orchestration. CloudCore relies on PostgreSQL for metadata storage and Redis for caching. The engineering team uses GitHub for version control and deploys via Kubernetes on AWS EKS.\" } }];"
+      },
+      "id": "set-input",
+      "name": "Set Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a knowledge graph ingestion assistant. When given text, use the FalkorDB Graph RAG tool to ingest it into the knowledge graph."
+        }
+      },
+      "id": "ai-agent",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o"
+        },
+        "options": {}
+      },
+      "id": "openai-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        580,
+        520
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "uFLqPaGqhddJZ4y4",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "ingest",
+        "documentText": "Acme Corporation is headquartered in San Francisco and was founded by John Smith in 2010. The company develops cloud infrastructure software used by over 500 enterprise clients worldwide. Jane Doe serves as the Chief Technology Officer and leads a team of 200 engineers. Acme's flagship product, CloudCore, integrates with Amazon Web Services and Microsoft Azure. In 2023, Acme acquired DataBridge Inc., a startup based in Austin, Texas, for $120 million. DataBridge was co-founded by Robert Lee and specializes in real-time data pipeline orchestration. CloudCore relies on PostgreSQL for metadata storage and Redis for caching. The engineering team uses GitHub for version control and deploys via Kubernetes on AWS EKS.",
+        "filename": "acme_overview.txt"
+      },
+      "id": "rag-tool",
+      "name": "FalkorDB Graph RAG Tool",
+      "type": "n8n-nodes-falkordb-graphrag.graphRag",
+      "typeVersion": 1,
+      "position": [
+        820,
+        520
+      ],
+      "credentials": {
+        "falkorDbGraphRagApi": {
+          "id": "wifeKejSOW367A54",
+          "name": "FalkorDB GraphRAG Server account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Message": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FalkorDB Graph RAG Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "GraphRag tool node — Ingest Text operation. AI Agent ingests text sent in the chat message."
+  }
+}

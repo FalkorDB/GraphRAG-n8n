@@ -8,10 +8,6 @@ import {
 
 import { GraphRagClient, IngestOptions, QueryOptions } from "../../src/GraphRagClient";
 
-/**
- * Shared advanced ingest fields (shown when Advanced Options is enabled).
- * Appended to both Ingest Text and Ingest GitHub Repo operations.
- */
 const ADVANCED_INGEST_FIELDS = [
 	{
 		displayName: "Chunking Strategy",
@@ -54,7 +50,7 @@ const ADVANCED_INGEST_FIELDS = [
 		name: "chunkOverlap",
 		type: "number" as const,
 		default: 100,
-		description: "Overlap tokens between fixed-size chunks (0–500).",
+		description: "Overlap in tokens between consecutive fixed-size chunks.",
 		displayOptions: { show: { operation: ["ingest", "ingestGithub"], chunkingStrategy: ["fixed_size"], showAdvanced: [true] } },
 	},
 	{
@@ -63,13 +59,10 @@ const ADVANCED_INGEST_FIELDS = [
 		type: "options" as const,
 		options: [
 			{ name: "Exact (default)", value: "exact" },
-			{ name: "Description Merge", value: "description_merge" },
-			{ name: "Semantic", value: "semantic" },
-			{ name: "LLM Verified", value: "llm_verified" },
-			{ name: "All", value: "all" },
+			{ name: "Fuzzy", value: "fuzzy" },
 		],
 		default: "exact",
-		description: "How the server resolves duplicate entities across chunks.",
+		description: "How to resolve duplicate entities during ingestion.",
 		displayOptions: { show: { operation: ["ingest", "ingestGithub"], showAdvanced: [true] } },
 	},
 	{
@@ -82,10 +75,10 @@ const ADVANCED_INGEST_FIELDS = [
 	},
 ];
 
-export class GraphRag implements INodeType {
+export class GraphRagAction implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: "FalkorDB Graph RAG Tool",
-		name: "graphRag",
+		displayName: "FalkorDB Graph RAG",
+		name: "graphRagAction",
 		icon: "file:falkordb-f.svg",
 		group: ["transform"],
 		version: 1,
@@ -93,14 +86,14 @@ export class GraphRag implements INodeType {
 			"Query or ingest data in a FalkorDB Graph RAG knowledge graph. " +
 			"Use 'Ask Question' to answer questions from the knowledge graph. " +
 			"Use 'Ingest Text' to add plain text or markdown. " +
-			"Use 'Ingest GitHub Repo' to ingest all markdown files from a GitHub repository URL. " +
-			"Use 'List Documents' to see what has been ingested.",
-		defaults: { name: "FalkorDB Graph RAG Tool" },
-		inputs: [],
-		outputs: ["ai_tool"],
+			"Use 'Ingest GitHub Repo' to ingest all markdown files from a GitHub repository. " +
+			"Use 'List Documents' to see what has been ingested. " +
+			"Connects directly in a pipeline (main input/output).",
+		defaults: { name: "FalkorDB Graph RAG" },
+		inputs: ["main"],
+		outputs: ["main"],
 		credentials: [{ name: "falkorDbGraphRagApi", required: true }],
 		properties: [
-			// ── Operation ─────────────────────────────────────────────────────────
 			{
 				displayName: "Operation",
 				name: "operation",
@@ -115,14 +108,15 @@ export class GraphRag implements INodeType {
 				default: "question",
 			},
 
-			// ── Ask Question ─────────────────────────────────────────────────────
+			// ── Ask Question ──────────────────────────────────────────────────────
 			{
 				displayName: "Question",
 				name: "questionText",
 				type: "string",
 				typeOptions: { rows: 3 },
-				default: '={{ $fromAI("question", "Natural-language question to ask the knowledge graph. Only use this for questions, never for ingesting URLs or text.") }}',
-				description: "The question to ask. The server answers using its LLM and knowledge graph.",
+				default: "",
+				placeholder: "What servers are in the network?",
+				description: "The natural-language question to ask the knowledge graph.",
 				displayOptions: { show: { operation: ["question"] } },
 			},
 			{
@@ -135,17 +129,18 @@ export class GraphRag implements INodeType {
 					{ name: "Multi-Path — deeper, multi-hop", value: "multi_path" },
 				],
 				default: "auto",
-				description: "How the server retrieves context. Auto picks the best strategy.",
+				description: "How the server retrieves context.",
 				displayOptions: { show: { operation: ["question"] } },
 			},
 
-			// ── Ingest Text ──────────────────────────────────────────────────────
+			// ── Ingest Text ───────────────────────────────────────────────────────
 			{
 				displayName: "Document Text",
 				name: "documentText",
 				type: "string",
 				typeOptions: { rows: 6 },
-				default: '={{ $fromAI("document_text", "The plain text or markdown content to ingest into the knowledge graph") }}',
+				default: "",
+				placeholder: "Paste your document text here, or use an expression like {{ $json.text }}",
 				description: "Text to ingest. Supports plain text and markdown.",
 				displayOptions: { show: { operation: ["ingest"] } },
 			},
@@ -158,13 +153,14 @@ export class GraphRag implements INodeType {
 				displayOptions: { show: { operation: ["ingest"] } },
 			},
 
-			// ── Ingest GitHub Repo ──────────────────────────────────────────────
+			// ── Ingest GitHub Repo ────────────────────────────────────────────────
 			{
 				displayName: "GitHub Repo URL",
 				name: "githubUrl",
 				type: "string",
-				default: '={{ $fromAI("github_url", "Public GitHub repository URL to ingest, e.g. https://github.com/owner/repo") }}',
-				description: "URL of the public GitHub repository (e.g. https://github.com/FalkorDB/GraphRAG-SDK). Discovers and ingests all .md files.",
+				default: "",
+				placeholder: "https://github.com/FalkorDB/GraphRAG-SDK",
+				description: "URL of the public GitHub repository. Discovers and ingests all .md files.",
 				displayOptions: { show: { operation: ["ingestGithub"] } },
 			},
 			{
@@ -176,7 +172,7 @@ export class GraphRag implements INodeType {
 				displayOptions: { show: { operation: ["ingestGithub"] } },
 			},
 
-			// ── Advanced ingest options (shared) ──────────────────────────────────
+			// ── Advanced ingest options ───────────────────────────────────────────
 			{
 				displayName: "Advanced Options",
 				name: "showAdvanced",
@@ -203,6 +199,7 @@ export class GraphRag implements INodeType {
 				entityTypes: this.getNodeParameter("entityTypes", i, "") as string,
 			};
 		};
+
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 		const credentials = await this.getCredentials("falkorDbGraphRagApi");
@@ -224,14 +221,14 @@ export class GraphRag implements INodeType {
 				} else if (operation === "ingest") {
 					const text = this.getNodeParameter("documentText", i) as string;
 					const filename = this.getNodeParameter("filename", i) as string;
-				const opts = getIngestOpts(i);
+					const opts = getIngestOpts(i);
 					const result = await client.ingest(text, filename, opts);
 					returnData.push({ json: { filename, ...result }, pairedItem: { item: i } });
 
 				} else if (operation === "ingestGithub") {
 					const repoUrl = this.getNodeParameter("githubUrl", i) as string;
 					const ref = (this.getNodeParameter("githubRef", i) as string).trim() || undefined;
-				const opts = getIngestOpts(i);
+					const opts = getIngestOpts(i);
 					const result = await client.ingestGithub(repoUrl, ref, opts);
 					returnData.push({ json: { ...result }, pairedItem: { item: i } });
 
@@ -252,5 +249,4 @@ export class GraphRag implements INodeType {
 		}
 		return [returnData];
 	}
-
 }

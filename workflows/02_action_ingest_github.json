@@ -1,0 +1,33 @@
+{
+  "name": "03 — Action: Ingest GitHub Repo",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "ingestGithub",
+        "githubUrl": "https://github.com/FalkorDB/GraphRAG-SDK",
+        "githubRef": ""
+      },
+      "id": "rag-node",
+      "name": "FalkorDB Graph RAG",
+      "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": {
+        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "FalkorDB Graph RAG", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": { "description": "GraphRagAction pipeline node — Ingest GitHub Repo operation. Edit the GitHub Repo URL field." }
+}

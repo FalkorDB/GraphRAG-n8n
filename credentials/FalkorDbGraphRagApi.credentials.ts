@@ -5,49 +5,26 @@ import {
 
 export class FalkorDbGraphRagApi implements ICredentialType {
 	name = 'falkorDbGraphRagApi';
-	displayName = 'FalkorDB GraphRAG API';
-	documentationUrl = 'https://docs.falkordb.com/genai-tools/graphrag-sdk.html';
+	displayName = 'FalkorDB GraphRAG Server';
+	documentationUrl = 'https://github.com/FalkorDB/GraphRAG-Server';
 
 	properties: INodeProperties[] = [
 		{
-			displayName: 'Host',
-			name: 'host',
+			displayName: 'Server URL',
+			name: 'serverUrl',
 			type: 'string',
-			default: 'localhost',
+			default: 'http://localhost:8000',
 			required: true,
-			placeholder: 'localhost',
-			description: 'Hostname or IP of the FalkorDB server',
+			placeholder: 'http://localhost:8000',
+			description: 'Base URL of the running GraphRAG-Server instance',
 		},
 		{
-			displayName: 'Port',
-			name: 'port',
-			type: 'number',
-			default: 6379,
-			required: true,
-			description: 'Port of the FalkorDB server (default: 6379)',
-		},
-		{
-			displayName: 'Password',
-			name: 'password',
+			displayName: 'Bearer Token',
+			name: 'bearerToken',
 			type: 'string',
 			typeOptions: { password: true },
 			default: '',
-			description:
-				'Password / ACL password for the FalkorDB server (leave blank if none)',
-		},
-		{
-			displayName: 'Username',
-			name: 'username',
-			type: 'string',
-			default: '',
-			description: 'ACL username (leave blank to use the default user)',
-		},
-		{
-			displayName: 'Use TLS',
-			name: 'useTls',
-			type: 'boolean',
-			default: false,
-			description: 'Whether to connect using TLS/SSL',
+			description: 'Bearer token for authentication (leave blank if auth_disabled=true on the server)',
 		},
 	];
 }
