@@ -1,0 +1,11 @@
+# Build output and dependencies
+dist/
+node_modules/
+coverage/
+
+# Generated / external data
+package-lock.json
+workflows/
+
+# Lock and log files
+*.log

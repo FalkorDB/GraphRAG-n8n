@@ -45,14 +45,14 @@ describe("GraphRagClient constructor", () => {
 		// access private field via cast to verify normalisation via a real call
 		mockFetch.mockResolvedValueOnce(okJson({ answer: "ok" }));
 		void client.question("test");
-		expect(mockFetch).toHaveBeenCalledWith(
-			"http://localhost:8000/api/query",
-			expect.any(Object),
-		);
+		expect(mockFetch).toHaveBeenCalledWith("http://localhost:8000/api/query", expect.any(Object));
 	});
 
 	it("includes Authorization header when bearerToken provided", async () => {
-		const client = new GraphRagClient({ serverUrl: "http://localhost:8000", bearerToken: "mytoken" });
+		const client = new GraphRagClient({
+			serverUrl: "http://localhost:8000",
+			bearerToken: "mytoken",
+		});
 		mockFetch.mockResolvedValueOnce(okJson({ answer: "ok" }));
 		await client.question("test");
 		const [, init] = mockFetch.mock.calls[0];
@@ -64,7 +64,9 @@ describe("GraphRagClient constructor", () => {
 		mockFetch.mockResolvedValueOnce(okJson({ answer: "ok" }));
 		await client.question("test");
 		const [, init] = mockFetch.mock.calls[0];
-		expect((init as RequestInit & { headers: Record<string, string> }).headers).not.toHaveProperty("Authorization");
+		expect((init as RequestInit & { headers: Record<string, string> }).headers).not.toHaveProperty(
+			"Authorization",
+		);
 	});
 });
 
@@ -125,7 +127,12 @@ describe("GraphRagClient.ingest", () => {
 	it("POSTs multipart to /api/ingest and parses SSE response", async () => {
 		mockFetch.mockResolvedValueOnce(okText(sseComplete(5, 4, 2)));
 		const result = await client.ingest("some text", "doc.txt");
-		expect(result).toEqual({ status: "complete", nodesCreated: 5, relationshipsCreated: 4, chunksIndexed: 2 });
+		expect(result).toEqual({
+			status: "complete",
+			nodesCreated: 5,
+			relationshipsCreated: 4,
+			chunksIndexed: 2,
+		});
 		expect(mockFetch).toHaveBeenCalledWith(
 			"http://localhost:8000/api/ingest",
 			expect.objectContaining({ method: "POST" }),
@@ -141,9 +148,14 @@ describe("GraphRagClient.ingest", () => {
 	});
 
 	it("returns zeros when SSE has no complete event", async () => {
-		mockFetch.mockResolvedValueOnce(okText("data: {\"type\":\"step\",\"step\":1}"));
+		mockFetch.mockResolvedValueOnce(okText('data: {"type":"step","step":1}'));
 		const result = await client.ingest("text", "doc.txt");
-		expect(result).toEqual({ status: "complete", nodesCreated: 0, relationshipsCreated: 0, chunksIndexed: 0 });
+		expect(result).toEqual({
+			status: "complete",
+			nodesCreated: 0,
+			relationshipsCreated: 0,
+			chunksIndexed: 0,
+		});
 	});
 
 	it("throws on non-ok response", async () => {
@@ -181,9 +193,11 @@ describe("GraphRagClient.listDocuments", () => {
 	const client = new GraphRagClient({ serverUrl: "http://localhost:8000" });
 
 	it("GETs /api/documents and maps snake_case fields", async () => {
-		mockFetch.mockResolvedValueOnce(okJson([
-			{ id: "1", name: "doc.txt", size: 100, chunk_count: 3, entity_count: 7, relation_count: 5 },
-		]));
+		mockFetch.mockResolvedValueOnce(
+			okJson([
+				{ id: "1", name: "doc.txt", size: 100, chunk_count: 3, entity_count: 7, relation_count: 5 },
+			]),
+		);
 		const docs = await client.listDocuments();
 		expect(docs).toEqual([
 			{ id: "1", name: "doc.txt", size: 100, chunkCount: 3, entityCount: 7, relationCount: 5 },
@@ -191,9 +205,11 @@ describe("GraphRagClient.listDocuments", () => {
 	});
 
 	it("handles { documents: [...] } envelope", async () => {
-		mockFetch.mockResolvedValueOnce(okJson({
-			documents: [{ id: "2", name: "a.md", size: 50 }],
-		}));
+		mockFetch.mockResolvedValueOnce(
+			okJson({
+				documents: [{ id: "2", name: "a.md", size: 50 }],
+			}),
+		);
 		const docs = await client.listDocuments();
 		expect(docs[0].id).toBe("2");
 	});
@@ -216,13 +232,20 @@ describe("GraphRagClient.ingestGithub", () => {
 
 	it("calls preview then ingests each discovered file", async () => {
 		mockFetch
-			.mockResolvedValueOnce(okJson({
-				owner: "FalkorDB", repo: "GraphRAG-SDK", ref: "main",
-				files: [{ path: "README.md", size: 100 }, { path: "docs/index.md", size: 200 }],
-			}))
-			.mockResolvedValueOnce(okText("file one content"))   // raw.githubusercontent fetch 1
+			.mockResolvedValueOnce(
+				okJson({
+					owner: "FalkorDB",
+					repo: "GraphRAG-SDK",
+					ref: "main",
+					files: [
+						{ path: "README.md", size: 100 },
+						{ path: "docs/index.md", size: 200 },
+					],
+				}),
+			)
+			.mockResolvedValueOnce(okText("file one content")) // raw.githubusercontent fetch 1
 			.mockResolvedValueOnce(okText(sseComplete(2, 1, 1))) // ingest 1
-			.mockResolvedValueOnce(okText("file two content"))   // raw.githubusercontent fetch 2
+			.mockResolvedValueOnce(okText("file two content")) // raw.githubusercontent fetch 2
 			.mockResolvedValueOnce(okText(sseComplete(3, 2, 1))); // ingest 2
 
 		const result = await client.ingestGithub("https://github.com/FalkorDB/GraphRAG-SDK");
@@ -235,13 +258,20 @@ describe("GraphRagClient.ingestGithub", () => {
 
 	it("skips files that fail to fetch", async () => {
 		mockFetch
-			.mockResolvedValueOnce(okJson({
-				owner: "org", repo: "repo", ref: "main",
-				files: [{ path: "good.md", size: 10 }, { path: "bad.md", size: 10 }],
-			}))
-			.mockResolvedValueOnce(okText("content"))          // good.md raw
+			.mockResolvedValueOnce(
+				okJson({
+					owner: "org",
+					repo: "repo",
+					ref: "main",
+					files: [
+						{ path: "good.md", size: 10 },
+						{ path: "bad.md", size: 10 },
+					],
+				}),
+			)
+			.mockResolvedValueOnce(okText("content")) // good.md raw
 			.mockResolvedValueOnce(okText(sseComplete(1, 0, 1))) // good.md ingest
-			.mockResolvedValueOnce(errorResponse(404));        // bad.md raw
+			.mockResolvedValueOnce(errorResponse(404)); // bad.md raw
 
 		const result = await client.ingestGithub("https://github.com/org/repo");
 		expect(result.filesIngested).toBe(1);
@@ -250,12 +280,16 @@ describe("GraphRagClient.ingestGithub", () => {
 
 	it("throws when preview returns no files", async () => {
 		mockFetch.mockResolvedValueOnce(okJson({ owner: "o", repo: "r", ref: "main", files: [] }));
-		await expect(client.ingestGithub("https://github.com/o/r")).rejects.toThrow("No markdown files found");
+		await expect(client.ingestGithub("https://github.com/o/r")).rejects.toThrow(
+			"No markdown files found",
+		);
 	});
 
 	it("throws when preview request fails", async () => {
 		mockFetch.mockResolvedValueOnce(errorResponse(422, "bad url"));
-		await expect(client.ingestGithub("https://github.com/bad")).rejects.toThrow("GitHub preview failed (HTTP 422)");
+		await expect(client.ingestGithub("https://github.com/bad")).rejects.toThrow(
+			"GitHub preview failed (HTTP 422)",
+		);
 	});
 });
 

@@ -76,13 +76,15 @@ export class GraphRagClient {
 
 	constructor(config: GraphRagConfig) {
 		this.base = config.serverUrl.replace(/\/$/, "");
-		this.authHeader = config.bearerToken
-			? { Authorization: `Bearer ${config.bearerToken}` }
-			: {};
+		this.authHeader = config.bearerToken ? { Authorization: `Bearer ${config.bearerToken}` } : {};
 	}
 
 	private jsonHeaders(): Record<string, string> {
-		return { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", ...this.authHeader };
+		return {
+			"Content-Type": "application/json",
+			"X-Requested-With": "XMLHttpRequest",
+			...this.authHeader,
+		};
 	}
 
 	private multipartHeaders(): Record<string, string> {
@@ -107,7 +109,7 @@ export class GraphRagClient {
 			}),
 		});
 		if (!res.ok) throw new Error(`Query failed (HTTP ${res.status}): ${await res.text()}`);
-		const data = await res.json() as { answer: string };
+		const data = (await res.json()) as { answer: string };
 		return { answer: data.answer ?? "" };
 	}
 
@@ -117,13 +119,18 @@ export class GraphRagClient {
 	 * Ingest a text string as a named file.
 	 * filename extension controls server parsing: .txt / .md = plain text, .pdf = PDF extraction.
 	 */
-	async ingest(text: string, filename = "document.txt", opts: IngestOptions = {}): Promise<IngestResult> {
+	async ingest(
+		text: string,
+		filename = "document.txt",
+		opts: IngestOptions = {},
+	): Promise<IngestResult> {
 		const form = new FormData();
 		const ext = filename.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
 		form.append("file", new Blob([text], { type: ext }), filename);
 		if (opts.chunkingStrategy) form.append("chunking_strategy", opts.chunkingStrategy);
 		if (opts.maxTokens !== undefined) form.append("max_tokens", String(opts.maxTokens));
-		if (opts.overlapSentences !== undefined) form.append("overlap_sentences", String(opts.overlapSentences));
+		if (opts.overlapSentences !== undefined)
+			form.append("overlap_sentences", String(opts.overlapSentences));
 		if (opts.chunkSize !== undefined) form.append("chunk_size", String(opts.chunkSize));
 		if (opts.chunkOverlap !== undefined) form.append("chunk_overlap", String(opts.chunkOverlap));
 		if (opts.extractionStrategy) form.append("extraction_strategy", opts.extractionStrategy);
@@ -140,13 +147,18 @@ export class GraphRagClient {
 	}
 
 	/** Ingest raw binary bytes (e.g. a PDF buffer) directly. */
-	async ingestBuffer(buf: Buffer | Uint8Array, filename: string, opts: IngestOptions = {}): Promise<IngestResult> {
+	async ingestBuffer(
+		buf: Buffer | Uint8Array,
+		filename: string,
+		opts: IngestOptions = {},
+	): Promise<IngestResult> {
 		const ext = filename.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
 		const form = new FormData();
 		form.append("file", new Blob([buf], { type: ext }), filename);
 		if (opts.chunkingStrategy) form.append("chunking_strategy", opts.chunkingStrategy);
 		if (opts.maxTokens !== undefined) form.append("max_tokens", String(opts.maxTokens));
-		if (opts.overlapSentences !== undefined) form.append("overlap_sentences", String(opts.overlapSentences));
+		if (opts.overlapSentences !== undefined)
+			form.append("overlap_sentences", String(opts.overlapSentences));
 		if (opts.chunkSize !== undefined) form.append("chunk_size", String(opts.chunkSize));
 		if (opts.chunkOverlap !== undefined) form.append("chunk_overlap", String(opts.chunkOverlap));
 		if (opts.extractionStrategy) form.append("extraction_strategy", opts.extractionStrategy);
@@ -169,33 +181,49 @@ export class GraphRagClient {
 	 * Uses /api/ingest/github/preview to discover .md files,
 	 * fetches each from raw.githubusercontent.com, then ingests via /api/ingest.
 	 */
-	async ingestGithub(repoUrl: string, ref?: string, opts: IngestOptions = {}): Promise<IngestGithubResult> {
+	async ingestGithub(
+		repoUrl: string,
+		ref?: string,
+		opts: IngestOptions = {},
+	): Promise<IngestGithubResult> {
 		const previewRes = await fetch(`${this.base}/api/ingest/github/preview`, {
 			method: "POST",
 			headers: this.jsonHeaders(),
 			body: JSON.stringify({ url: repoUrl, ref: ref || null }),
 		});
 		if (!previewRes.ok) {
-			throw new Error(`GitHub preview failed (HTTP ${previewRes.status}): ${await previewRes.text()}`);
+			throw new Error(
+				`GitHub preview failed (HTTP ${previewRes.status}): ${await previewRes.text()}`,
+			);
 		}
-		const preview = await previewRes.json() as {
-			owner: string; repo: string; ref: string;
+		const preview = (await previewRes.json()) as {
+			owner: string;
+			repo: string;
+			ref: string;
 			files: Array<{ path: string; size: number }>;
 		};
 		if (!preview.files?.length) throw new Error(`No markdown files found in ${repoUrl}`);
 
 		const { owner, repo } = preview;
 		const gitRef = preview.ref ?? "HEAD";
-		let totalNodes = 0, totalRels = 0;
-		const ingested: string[] = [], skipped: string[] = [];
+		let totalNodes = 0,
+			totalRels = 0;
+		const ingested: string[] = [],
+			skipped: string[] = [];
 
 		for (const file of preview.files) {
 			const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${gitRef}/${file.path}`;
 			try {
 				const fileRes = await fetch(rawUrl);
-				if (!fileRes.ok) { skipped.push(file.path); continue; }
+				if (!fileRes.ok) {
+					skipped.push(file.path);
+					continue;
+				}
 				const text = await fileRes.text();
-				if (!text.trim()) { skipped.push(file.path); continue; }
+				if (!text.trim()) {
+					skipped.push(file.path);
+					continue;
+				}
 				const fname = file.path.split("/").pop() ?? file.path;
 				const result = await this.ingest(text, fname, opts);
 				totalNodes += result.nodesCreated;
@@ -205,7 +233,14 @@ export class GraphRagClient {
 				skipped.push(file.path);
 			}
 		}
-		return { repoUrl, filesIngested: ingested.length, totalNodesCreated: totalNodes, totalRelationshipsCreated: totalRels, files: ingested, skippedFiles: skipped };
+		return {
+			repoUrl,
+			filesIngested: ingested.length,
+			totalNodesCreated: totalNodes,
+			totalRelationshipsCreated: totalRels,
+			files: ingested,
+			skippedFiles: skipped,
+		};
 	}
 
 	// ── Finalize (run embeddings + dedup after batch ingest) ─────────────────
@@ -223,22 +258,48 @@ export class GraphRagClient {
 		});
 		if (!res.ok) throw new Error(`Finalize failed (HTTP ${res.status}): ${await res.text()}`);
 		const raw = await res.text();
-		const last = raw.split("\n").filter(l => l.startsWith("data:")).pop() ?? "";
-		try { return JSON.parse(last.slice(5).trim()) as { status: string }; } catch { return { status: "complete" }; }
+		const last =
+			raw
+				.split("\n")
+				.filter((l) => l.startsWith("data:"))
+				.pop() ?? "";
+		try {
+			return JSON.parse(last.slice(5).trim()) as { status: string };
+		} catch {
+			return { status: "complete" };
+		}
 	}
 
 	// ── Documents list ───────────────────────────────────────────────────────
 
 	/** List all ingested documents tracked in the knowledge graph. */
-	async listDocuments(): Promise<Array<{ id: string; name: string; size?: number; chunkCount?: number; entityCount?: number; relationCount?: number }>> {
+	async listDocuments(): Promise<
+		Array<{
+			id: string;
+			name: string;
+			size?: number;
+			chunkCount?: number;
+			entityCount?: number;
+			relationCount?: number;
+		}>
+	> {
 		const res = await fetch(`${this.base}/api/documents`, {
 			headers: { "X-Requested-With": "XMLHttpRequest", ...this.authHeader },
 		});
 		if (!res.ok) throw new Error(`List documents failed (HTTP ${res.status}): ${await res.text()}`);
-		const raw = await res.json() as unknown;
+		const raw = (await res.json()) as unknown;
 		// Server may return a plain array or { documents: [...] }
-		const arr = Array.isArray(raw) ? raw : (raw as { documents: unknown[] }).documents ?? [];
-		return (arr as Array<{ id: string; name: string; size?: number; chunk_count?: number; entity_count?: number; relation_count?: number }>).map(d => ({
+		const arr = Array.isArray(raw) ? raw : ((raw as { documents: unknown[] }).documents ?? []);
+		return (
+			arr as Array<{
+				id: string;
+				name: string;
+				size?: number;
+				chunk_count?: number;
+				entity_count?: number;
+				relation_count?: number;
+			}>
+		).map((d) => ({
 			id: d.id,
 			name: d.name,
 			size: d.size,
@@ -251,15 +312,33 @@ export class GraphRagClient {
 	// ── SSE parser ───────────────────────────────────────────────────────────
 
 	private _parseIngestSSE(raw: string): IngestResult {
-		const lines = raw.split("\n").filter(l => l.startsWith("data:")).map(l => l.slice(5).trim()).filter(Boolean);
+		const lines = raw
+			.split("\n")
+			.filter((l) => l.startsWith("data:"))
+			.map((l) => l.slice(5).trim())
+			.filter(Boolean);
 		for (let i = lines.length - 1; i >= 0; i--) {
 			try {
-				const p = JSON.parse(lines[i]) as { status?: string; nodes_created?: number; relationships_created?: number; chunks_indexed?: number; message?: string };
+				const p = JSON.parse(lines[i]) as {
+					status?: string;
+					nodes_created?: number;
+					relationships_created?: number;
+					chunks_indexed?: number;
+					message?: string;
+				};
 				if (p.status === "complete" || p.nodes_created !== undefined) {
-					return { status: p.status ?? "complete", nodesCreated: p.nodes_created ?? 0, relationshipsCreated: p.relationships_created ?? 0, chunksIndexed: p.chunks_indexed ?? 0 };
+					return {
+						status: p.status ?? "complete",
+						nodesCreated: p.nodes_created ?? 0,
+						relationshipsCreated: p.relationships_created ?? 0,
+						chunksIndexed: p.chunks_indexed ?? 0,
+					};
 				}
-				if (p.message && p.message.toLowerCase().includes("error")) throw new Error(`Ingest error: ${p.message}`);
-			} catch (e) { if ((e as Error).message.startsWith("Ingest error:")) throw e; }
+				if (p.message && p.message.toLowerCase().includes("error"))
+					throw new Error(`Ingest error: ${p.message}`);
+			} catch (e) {
+				if ((e as Error).message.startsWith("Ingest error:")) throw e;
+			}
 		}
 		return { status: "complete", nodesCreated: 0, relationshipsCreated: 0, chunksIndexed: 0 };
 	}
