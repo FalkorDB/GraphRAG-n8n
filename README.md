@@ -86,7 +86,7 @@ for details.
 
 ## Credentials
 
-Both nodes use a single credential, **FalkorDB GraphRAG Server**:
+Both nodes use a single credential, **FalkorDB GraphRAG Server API**:
 
 | Field | Required | Description |
 | --- | --- | --- |
@@ -112,7 +112,7 @@ on its own. See [`workflows/08_tool_ask_question.json`](workflows/08_tool_ask_qu
 
 Import any file from [`workflows/`](workflows) via **Workflows → Import from File**.
 After importing, update the credential references: the pipeline examples (`01`–`04`)
-need the **FalkorDB GraphRAG Server** credential, and the AI Agent tool examples
+need the **FalkorDB GraphRAG Server API** credential, and the AI Agent tool examples
 (`05`–`08`) additionally need an **AI model** credential (e.g. OpenAI) for the Agent.
 
 | File | Node | Operation |
