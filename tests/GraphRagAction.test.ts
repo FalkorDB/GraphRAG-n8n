@@ -9,7 +9,7 @@ const { mockQuestion, mockIngest, mockIngestGithub, mockListDocuments } = vi.hoi
 }));
 
 vi.mock("../src/GraphRagClient", () => ({
-	GraphRagClient: vi.fn(function() {
+	GraphRagClient: vi.fn(function () {
 		return {
 			question: mockQuestion,
 			ingest: mockIngest,
@@ -21,7 +21,10 @@ vi.mock("../src/GraphRagClient", () => ({
 
 import { GraphRagAction } from "../nodes/GraphRagAction/GraphRagAction.node";
 
-function makeContext(params: Record<string, unknown>, credentialOverrides: Record<string, unknown> = {}): IExecuteFunctions {
+function makeContext(
+	params: Record<string, unknown>,
+	credentialOverrides: Record<string, unknown> = {},
+): IExecuteFunctions {
 	return {
 		getInputData: vi.fn(() => [{ json: {} }]),
 		getNodeParameter: vi.fn((name: string) => params[name] ?? undefined),
@@ -46,7 +49,11 @@ describe("GraphRagAction — question operation", () => {
 	beforeEach(() => mockQuestion.mockResolvedValue({ answer: "The answer is 42." }));
 
 	it("calls client.question with the question text", async () => {
-		await run({ operation: "question", questionText: "What is the answer?", queryStrategy: "auto" });
+		await run({
+			operation: "question",
+			questionText: "What is the answer?",
+			queryStrategy: "auto",
+		});
 		expect(mockQuestion).toHaveBeenCalledWith("What is the answer?", { strategy: undefined });
 	});
 
@@ -56,18 +63,32 @@ describe("GraphRagAction — question operation", () => {
 	});
 
 	it("returns answer in output json", async () => {
-		const [[result]] = await run({ operation: "question", questionText: "Q", queryStrategy: "auto" });
+		const [[result]] = await run({
+			operation: "question",
+			questionText: "Q",
+			queryStrategy: "auto",
+		});
 		expect(result.json).toMatchObject({ question: "Q", answer: "The answer is 42." });
 	});
 });
 
 describe("GraphRagAction — ingest operation", () => {
 	beforeEach(() =>
-		mockIngest.mockResolvedValue({ status: "complete", nodesCreated: 5, relationshipsCreated: 3, chunksIndexed: 2 }),
+		mockIngest.mockResolvedValue({
+			status: "complete",
+			nodesCreated: 5,
+			relationshipsCreated: 3,
+			chunksIndexed: 2,
+		}),
 	);
 
 	it("calls client.ingest with text, filename and empty opts when advanced hidden", async () => {
-		await run({ operation: "ingest", documentText: "hello world", filename: "doc.txt", showAdvanced: false });
+		await run({
+			operation: "ingest",
+			documentText: "hello world",
+			filename: "doc.txt",
+			showAdvanced: false,
+		});
 		expect(mockIngest).toHaveBeenCalledWith("hello world", "doc.txt", {});
 	});
 
@@ -85,18 +106,31 @@ describe("GraphRagAction — ingest operation", () => {
 			resolutionStrategy: "exact",
 			entityTypes: "PERSON,ORG",
 		});
-		expect(mockIngest).toHaveBeenCalledWith("text", "doc.txt", expect.objectContaining({
-			chunkingStrategy: "fixed_size",
-			chunkSize: 500,
-			chunkOverlap: 50,
-			resolutionStrategy: "exact",
-			entityTypes: "PERSON,ORG",
-		}));
+		expect(mockIngest).toHaveBeenCalledWith(
+			"text",
+			"doc.txt",
+			expect.objectContaining({
+				chunkingStrategy: "fixed_size",
+				chunkSize: 500,
+				chunkOverlap: 50,
+				resolutionStrategy: "exact",
+				entityTypes: "PERSON,ORG",
+			}),
+		);
 	});
 
 	it("returns ingestion stats in output json", async () => {
-		const [[result]] = await run({ operation: "ingest", documentText: "text", filename: "doc.txt", showAdvanced: false });
-		expect(result.json).toMatchObject({ filename: "doc.txt", nodesCreated: 5, relationshipsCreated: 3 });
+		const [[result]] = await run({
+			operation: "ingest",
+			documentText: "text",
+			filename: "doc.txt",
+			showAdvanced: false,
+		});
+		expect(result.json).toMatchObject({
+			filename: "doc.txt",
+			nodesCreated: 5,
+			relationshipsCreated: 3,
+		});
 	});
 });
 
@@ -104,23 +138,45 @@ describe("GraphRagAction — ingestGithub operation", () => {
 	beforeEach(() =>
 		mockIngestGithub.mockResolvedValue({
 			repoUrl: "https://github.com/FalkorDB/GraphRAG-SDK",
-			filesIngested: 10, totalNodesCreated: 40, totalRelationshipsCreated: 20,
-			files: [], skippedFiles: [],
+			filesIngested: 10,
+			totalNodesCreated: 40,
+			totalRelationshipsCreated: 20,
+			files: [],
+			skippedFiles: [],
 		}),
 	);
 
 	it("calls client.ingestGithub with repo url and ref", async () => {
-		await run({ operation: "ingestGithub", githubUrl: "https://github.com/FalkorDB/GraphRAG-SDK", githubRef: "main", showAdvanced: false });
-		expect(mockIngestGithub).toHaveBeenCalledWith("https://github.com/FalkorDB/GraphRAG-SDK", "main", {});
+		await run({
+			operation: "ingestGithub",
+			githubUrl: "https://github.com/FalkorDB/GraphRAG-SDK",
+			githubRef: "main",
+			showAdvanced: false,
+		});
+		expect(mockIngestGithub).toHaveBeenCalledWith(
+			"https://github.com/FalkorDB/GraphRAG-SDK",
+			"main",
+			{},
+		);
 	});
 
 	it("passes undefined ref when githubRef is empty string", async () => {
-		await run({ operation: "ingestGithub", githubUrl: "https://github.com/org/repo", githubRef: "  ", showAdvanced: false });
+		await run({
+			operation: "ingestGithub",
+			githubUrl: "https://github.com/org/repo",
+			githubRef: "  ",
+			showAdvanced: false,
+		});
 		expect(mockIngestGithub).toHaveBeenCalledWith("https://github.com/org/repo", undefined, {});
 	});
 
 	it("returns github result in output json", async () => {
-		const [[result]] = await run({ operation: "ingestGithub", githubUrl: "https://github.com/FalkorDB/GraphRAG-SDK", githubRef: "", showAdvanced: false });
+		const [[result]] = await run({
+			operation: "ingestGithub",
+			githubUrl: "https://github.com/FalkorDB/GraphRAG-SDK",
+			githubRef: "",
+			showAdvanced: false,
+		});
 		expect(result.json).toMatchObject({ filesIngested: 10 });
 	});
 });
@@ -173,8 +229,12 @@ describe("GraphRagAction node description", () => {
 	});
 
 	it("exposes all 4 operations", () => {
-		const opProp = node.description.properties.find((p: { name: string }) => p.name === "operation");
-		const values = ((opProp?.options ?? []) as Array<{ value: string }>).map(o => o.value);
-		expect(values).toEqual(expect.arrayContaining(["question", "ingest", "ingestGithub", "listDocuments"]));
+		const opProp = node.description.properties.find(
+			(p: { name: string }) => p.name === "operation",
+		);
+		const values = ((opProp?.options ?? []) as Array<{ value: string }>).map((o) => o.value);
+		expect(values).toEqual(
+			expect.arrayContaining(["question", "ingest", "ingestGithub", "listDocuments"]),
+		);
 	});
 });

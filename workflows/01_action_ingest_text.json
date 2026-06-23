@@ -1,5 +1,5 @@
 {
-  "name": "02 — Action: Ingest Text",
+  "name": "01 — Action: Ingest Text",
   "nodes": [
     {
       "parameters": {},

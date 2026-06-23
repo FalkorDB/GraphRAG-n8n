@@ -1,5 +1,5 @@
 {
-  "name": "03 — Action: Ingest GitHub Repo",
+  "name": "02 — Action: Ingest GitHub Repo",
   "nodes": [
     {
       "parameters": {},

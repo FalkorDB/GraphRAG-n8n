@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Keep the GitHub Actions used by our workflows up to date.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
+
+  # Keep the npm dependencies (TypeScript, Vitest, ESLint, …) up to date.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "main"
