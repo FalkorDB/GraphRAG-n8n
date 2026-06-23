@@ -1,15 +1,28 @@
 version: 2
 updates:
-  # Keep the GitHub Actions used by our workflows up to date.
+  # Keep the GitHub Actions used by our workflows up to date, as a single grouped PR.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     target-branch: "main"
+    groups:
+      github-actions:
+        patterns: ["*"]
 
-  # Keep the npm dependencies (TypeScript, Vitest, ESLint, …) up to date.
+  # Keep the npm dependencies (TypeScript, Vitest, ESLint, …) up to date, as a
+  # single grouped PR so related updates land together instead of one PR each.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
     target-branch: "main"
+    groups:
+      npm-dependencies:
+        patterns: ["*"]
+    ignore:
+      # eslint-plugin-n8n-nodes-base only supports the ESLint 8.x rule API (the v9/v10
+      # API removed context.getFilename(), which the plugin's rules call and crash on).
+      # Hold ESLint on 8.x until the plugin ships an ESLint 9/10-compatible release.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]

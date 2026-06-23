@@ -154,7 +154,9 @@ export class GraphRagClient {
 	): Promise<IngestResult> {
 		const ext = filename.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
 		const form = new FormData();
-		form.append("file", new Blob([buf], { type: ext }), filename);
+		// Normalize to a fresh ArrayBuffer-backed Uint8Array so it is a valid BlobPart
+		// under the stricter typing (which excludes SharedArrayBuffer-backed views).
+		form.append("file", new Blob([Uint8Array.from(buf)], { type: ext }), filename);
 		if (opts.chunkingStrategy) form.append("chunking_strategy", opts.chunkingStrategy);
 		if (opts.maxTokens !== undefined) form.append("max_tokens", String(opts.maxTokens));
 		if (opts.overlapSentences !== undefined)

@@ -187,6 +187,56 @@ describe("GraphRagClient.ingest", () => {
 	});
 });
 
+// ── ingestBuffer ──────────────────────────────────────────────────────────────
+
+describe("GraphRagClient.ingestBuffer", () => {
+	const client = new GraphRagClient({ serverUrl: "http://localhost:8000" });
+
+	it("POSTs a Buffer as multipart to /api/ingest and parses SSE response", async () => {
+		mockFetch.mockResolvedValueOnce(okText(sseComplete(7, 3, 4)));
+		const result = await client.ingestBuffer(Buffer.from("binary bytes"), "doc.txt");
+		expect(result).toEqual({
+			status: "complete",
+			nodesCreated: 7,
+			relationshipsCreated: 3,
+			chunksIndexed: 4,
+		});
+		const [url, init] = mockFetch.mock.calls[0];
+		expect(url).toBe("http://localhost:8000/api/ingest");
+		expect((init as RequestInit).method).toBe("POST");
+		const form = (init as RequestInit).body as FormData;
+		const file = form.get("file") as File;
+		expect(file).toBeTruthy();
+		expect(await (file as unknown as Blob).text()).toBe("binary bytes");
+	});
+
+	it("accepts a Uint8Array and sets the PDF content type for .pdf files", async () => {
+		mockFetch.mockResolvedValueOnce(okText(sseComplete()));
+		await client.ingestBuffer(new Uint8Array([1, 2, 3]), "report.pdf");
+		const form = (mockFetch.mock.calls[0][1] as RequestInit).body as FormData;
+		const file = form.get("file") as unknown as Blob;
+		expect(file.type).toBe("application/pdf");
+	});
+
+	it("appends ingest options to the form", async () => {
+		mockFetch.mockResolvedValueOnce(okText(sseComplete()));
+		await client.ingestBuffer(Buffer.from("x"), "doc.txt", {
+			maxTokens: 128,
+			entityTypes: "PERSON",
+		});
+		const form = (mockFetch.mock.calls[0][1] as RequestInit).body as FormData;
+		expect(form.get("max_tokens")).toBe("128");
+		expect(form.get("entity_types")).toBe("PERSON");
+	});
+
+	it("throws on non-ok response", async () => {
+		mockFetch.mockResolvedValueOnce(errorResponse(500, "boom"));
+		await expect(client.ingestBuffer(Buffer.from("x"), "doc.txt")).rejects.toThrow(
+			"Ingest failed (HTTP 500)",
+		);
+	});
+});
+
 // ── listDocuments ─────────────────────────────────────────────────────────────
 
 describe("GraphRagClient.listDocuments", () => {
