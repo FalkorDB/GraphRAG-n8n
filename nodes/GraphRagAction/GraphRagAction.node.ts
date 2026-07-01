@@ -126,6 +126,14 @@ export class GraphRagAction implements INodeType {
 		credentials: [{ name: "falkorDbGraphRagApi", required: true }],
 		properties: [
 			{
+				displayName: "Graph Name",
+				name: "graphName",
+				type: "string",
+				default: "",
+				placeholder: "e.g. knowledge_graph",
+				description: "Name of the graph to operate on. Leave blank to use the server default.",
+			},
+			{
 				displayName: "Operation",
 				name: "operation",
 				type: "options",
@@ -263,12 +271,14 @@ export class GraphRagAction implements INodeType {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 		const credentials = await this.getCredentials("falkorDbGraphRagApi");
-		const client = new GraphRagClient({
-			serverUrl: credentials.serverUrl as string,
-			bearerToken: (credentials.bearerToken as string) || undefined,
-		});
 
 		for (let i = 0; i < items.length; i++) {
+			const graphName = (this.getNodeParameter("graphName", i, "") as string).trim();
+			const client = new GraphRagClient({
+				serverUrl: credentials.serverUrl as string,
+				bearerToken: (credentials.bearerToken as string) || undefined,
+				graphName: graphName || undefined,
+			});
 			const operation = this.getNodeParameter("operation", i) as string;
 			try {
 				if (operation === "question") {

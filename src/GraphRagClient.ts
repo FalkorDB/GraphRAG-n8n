@@ -14,6 +14,8 @@
 export interface GraphRagConfig {
 	serverUrl: string;
 	bearerToken?: string;
+	/** Graph to operate on. When set, appended as ?graph_name=... to every request. */
+	graphName?: string;
 }
 
 // ── Result types ─────────────────────────────────────────────────────────────
@@ -73,10 +75,17 @@ export interface QueryOptions {
 export class GraphRagClient {
 	private readonly base: string;
 	private readonly authHeader: Record<string, string>;
+	private readonly graphName: string;
 
 	constructor(config: GraphRagConfig) {
 		this.base = config.serverUrl.replace(/\/$/, "");
 		this.authHeader = config.bearerToken ? { Authorization: `Bearer ${config.bearerToken}` } : {};
+		this.graphName = config.graphName ?? "";
+	}
+
+	/** Returns "?graph_name=<name>" when a graph name is configured, otherwise "". */
+	private qs(): string {
+		return this.graphName ? `?graph_name=${encodeURIComponent(this.graphName)}` : "";
 	}
 
 	private jsonHeaders(): Record<string, string> {
@@ -98,7 +107,7 @@ export class GraphRagClient {
 	 * strategy: "auto" (default) | "local" | "multi_path"
 	 */
 	async question(q: string, opts: QueryOptions = {}): Promise<QuestionResult> {
-		const res = await fetch(`${this.base}/api/query`, {
+		const res = await fetch(`${this.base}/api/query${this.qs()}`, {
 			method: "POST",
 			headers: this.jsonHeaders(),
 			body: JSON.stringify({
@@ -106,6 +115,7 @@ export class GraphRagClient {
 				return_context: false,
 				history: opts.history ?? [],
 				strategy: opts.strategy ?? null,
+				...(this.graphName ? { graph_name: this.graphName } : {}),
 			}),
 		});
 		if (!res.ok) throw new Error(`Query failed (HTTP ${res.status}): ${await res.text()}`);
@@ -127,6 +137,7 @@ export class GraphRagClient {
 		const form = new FormData();
 		const ext = filename.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
 		form.append("file", new Blob([text], { type: ext }), filename);
+		if (this.graphName) form.append("graph_name", this.graphName);
 		if (opts.chunkingStrategy) form.append("chunking_strategy", opts.chunkingStrategy);
 		if (opts.maxTokens !== undefined) form.append("max_tokens", String(opts.maxTokens));
 		if (opts.overlapSentences !== undefined)
@@ -137,7 +148,7 @@ export class GraphRagClient {
 		if (opts.resolutionStrategy) form.append("resolution_strategy", opts.resolutionStrategy);
 		if (opts.entityTypes) form.append("entity_types", opts.entityTypes);
 
-		const res = await fetch(`${this.base}/api/ingest`, {
+		const res = await fetch(`${this.base}/api/ingest${this.qs()}`, {
 			method: "POST",
 			headers: this.multipartHeaders(),
 			body: form,
@@ -157,6 +168,7 @@ export class GraphRagClient {
 		// Normalize to a fresh ArrayBuffer-backed Uint8Array so it is a valid BlobPart
 		// under the stricter typing (which excludes SharedArrayBuffer-backed views).
 		form.append("file", new Blob([Uint8Array.from(buf)], { type: ext }), filename);
+		if (this.graphName) form.append("graph_name", this.graphName);
 		if (opts.chunkingStrategy) form.append("chunking_strategy", opts.chunkingStrategy);
 		if (opts.maxTokens !== undefined) form.append("max_tokens", String(opts.maxTokens));
 		if (opts.overlapSentences !== undefined)
@@ -167,7 +179,7 @@ export class GraphRagClient {
 		if (opts.resolutionStrategy) form.append("resolution_strategy", opts.resolutionStrategy);
 		if (opts.entityTypes) form.append("entity_types", opts.entityTypes);
 
-		const res = await fetch(`${this.base}/api/ingest`, {
+		const res = await fetch(`${this.base}/api/ingest${this.qs()}`, {
 			method: "POST",
 			headers: this.multipartHeaders(),
 			body: form,
@@ -188,10 +200,10 @@ export class GraphRagClient {
 		ref?: string,
 		opts: IngestOptions = {},
 	): Promise<IngestGithubResult> {
-		const previewRes = await fetch(`${this.base}/api/ingest/github/preview`, {
+		const previewRes = await fetch(`${this.base}/api/ingest/github/preview${this.qs()}`, {
 			method: "POST",
 			headers: this.jsonHeaders(),
-			body: JSON.stringify({ url: repoUrl, ref: ref || null }),
+			body: JSON.stringify({ url: repoUrl, ref: ref || null, ...(this.graphName ? { graph_name: this.graphName } : {}) }),
 		});
 		if (!previewRes.ok) {
 			throw new Error(
@@ -253,10 +265,10 @@ export class GraphRagClient {
 	 * Only needed when you call ingest manually with skipFinalize option.
 	 */
 	async finalize(): Promise<{ status: string }> {
-		const res = await fetch(`${this.base}/api/ingest/finalize`, {
+		const res = await fetch(`${this.base}/api/ingest/finalize${this.qs()}`, {
 			method: "POST",
 			headers: this.jsonHeaders(),
-			body: "{}",
+			body: JSON.stringify(this.graphName ? { graph_name: this.graphName } : {}),
 		});
 		if (!res.ok) throw new Error(`Finalize failed (HTTP ${res.status}): ${await res.text()}`);
 		const raw = await res.text();
@@ -285,7 +297,7 @@ export class GraphRagClient {
 			relationCount?: number;
 		}>
 	> {
-		const res = await fetch(`${this.base}/api/documents`, {
+		const res = await fetch(`${this.base}/api/documents${this.qs()}`, {
 			headers: { "X-Requested-With": "XMLHttpRequest", ...this.authHeader },
 		});
 		if (!res.ok) throw new Error(`List documents failed (HTTP ${res.status}): ${await res.text()}`);
