@@ -51,7 +51,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: "https://registry.npmjs.org"
           cache: npm
-      - uses: taiki-e/install-action@9e1e5806d4a4822de933115878265be9aaa786d9 # v2.82.2
+      - uses: taiki-e/install-action@16b05812d776ae1dfaabc8277e421fb6d2506419 # v2.82.7
         with:
           tool: just
       - run: just install
