@@ -24,10 +24,12 @@ import { GraphRag } from "../nodes/GraphRag/GraphRag.node";
 function makeContext(params: Record<string, unknown>): IExecuteFunctions {
 	return {
 		getInputData: vi.fn(() => [{ json: {} }]),
-		getNodeParameter: vi.fn((name: string) => params[name] ?? undefined),
+		getNodeParameter: vi.fn(
+			(name: string, _itemIndex: number, fallback?: unknown) => params[name] ?? fallback,
+		),
 		getCredentials: vi.fn(async () => ({
 			serverUrl: "http://localhost:8000",
-			bearerToken: "token",
+			apiToken: "token",
 		})),
 		getNode: vi.fn(() => ({ name: "FalkorDB Graph RAG Tool" })),
 		continueOnFail: vi.fn(() => false),
@@ -83,13 +85,41 @@ describe("GraphRag — question operation", () => {
 			questionText: "What is in the graph?",
 			queryStrategy: "auto",
 		});
-		expect(mockQuestion).toHaveBeenCalledWith("What is in the graph?", { strategy: undefined });
+		expect(mockQuestion).toHaveBeenCalledWith("What is in the graph?", {
+			strategy: undefined,
+			responseMode: "answer",
+		});
 		expect(result.json).toMatchObject({ answer: "graph answer" });
 	});
 
 	it("passes multi_path strategy", async () => {
 		await run({ operation: "question", questionText: "Q", queryStrategy: "multi_path" });
-		expect(mockQuestion).toHaveBeenCalledWith("Q", { strategy: "multi_path" });
+		expect(mockQuestion).toHaveBeenCalledWith("Q", {
+			strategy: "multi_path",
+			responseMode: "answer",
+		});
+	});
+
+	it("supports retrieve-only mode", async () => {
+		mockQuestion.mockResolvedValueOnce({
+			documents: [{ source_doc: "doc-1", content: "context" }],
+			count: 1,
+		});
+		const [[result]] = await run({
+			operation: "question",
+			questionText: "Q",
+			queryStrategy: "auto",
+			responseMode: "retrieveOnly",
+		});
+		expect(mockQuestion).toHaveBeenCalledWith("Q", {
+			strategy: undefined,
+			responseMode: "retrieve_only",
+		});
+		expect(result.json).toMatchObject({
+			question: "Q",
+			documents: [{ source_doc: "doc-1" }],
+			count: 1,
+		});
 	});
 });
 

@@ -13,16 +13,23 @@
 
 export interface GraphRagConfig {
 	serverUrl: string;
-	bearerToken?: string;
+	apiToken?: string;
 	/** Graph to operate on. When set, appended as ?graph_name=... to every request. */
 	graphName?: string;
 }
 
 // ── Result types ─────────────────────────────────────────────────────────────
 
-export interface QuestionResult {
+export interface QuestionAnswerResult {
 	answer: string;
 }
+
+export interface QuestionRetrieveResult {
+	documents: unknown[];
+	count: number;
+}
+
+export type QuestionResult = QuestionAnswerResult | QuestionRetrieveResult;
 
 export interface IngestResult {
 	status: string;
@@ -68,6 +75,8 @@ export interface QueryOptions {
 	strategy?: "auto" | "local" | "multi_path";
 	/** Conversation history: array of {role, content} messages */
 	history?: Array<{ role: string; content: string }>;
+	/** Response mode: answer from server (default) or retrieve context only. */
+	responseMode?: "answer" | "retrieve_only";
 }
 
 // ── Client ────────────────────────────────────────────────────────────────────
@@ -79,7 +88,9 @@ export class GraphRagClient {
 
 	constructor(config: GraphRagConfig) {
 		this.base = config.serverUrl.replace(/\/$/, "");
-		this.authHeader = config.bearerToken ? { Authorization: `Bearer ${config.bearerToken}` } : {};
+		this.authHeader = config.apiToken
+			? { Authorization: ["Bearer", config.apiToken].join(" ") }
+			: {};
 		this.graphName = config.graphName ?? "";
 	}
 
@@ -107,20 +118,29 @@ export class GraphRagClient {
 	 * strategy: "auto" (default) | "local" | "multi_path"
 	 */
 	async question(q: string, opts: QueryOptions = {}): Promise<QuestionResult> {
+		const retrieveOnly = opts.responseMode === "retrieve_only";
 		const res = await fetch(`${this.base}/api/query${this.qs()}`, {
 			method: "POST",
 			headers: this.jsonHeaders(),
 			body: JSON.stringify({
 				question: q,
-				return_context: false,
+				return_context: retrieveOnly,
+				skip_generation: retrieveOnly,
 				history: opts.history ?? [],
 				strategy: opts.strategy ?? null,
 				...(this.graphName ? { graph_name: this.graphName } : {}),
 			}),
 		});
 		if (!res.ok) throw new Error(`Query failed (HTTP ${res.status}): ${await res.text()}`);
-		const data = (await res.json()) as { answer: string };
-		return { answer: data.answer ?? "" };
+		const data = (await res.json()) as {
+			answer?: string;
+			documents?: unknown[];
+			context?: unknown;
+		};
+		if (!retrieveOnly) return { answer: data.answer ?? "" };
+
+		const documents = this._extractDocumentsFromContext(data);
+		return { documents, count: documents.length };
 	}
 
 	// ── Ingest text / markdown / PDF ─────────────────────────────────────────
@@ -203,7 +223,11 @@ export class GraphRagClient {
 		const previewRes = await fetch(`${this.base}/api/ingest/github/preview${this.qs()}`, {
 			method: "POST",
 			headers: this.jsonHeaders(),
-			body: JSON.stringify({ url: repoUrl, ref: ref || null, ...(this.graphName ? { graph_name: this.graphName } : {}) }),
+			body: JSON.stringify({
+				url: repoUrl,
+				ref: ref || null,
+				...(this.graphName ? { graph_name: this.graphName } : {}),
+			}),
 		});
 		if (!previewRes.ok) {
 			throw new Error(
@@ -321,6 +345,25 @@ export class GraphRagClient {
 			entityCount: d.entity_count,
 			relationCount: d.relation_count,
 		}));
+	}
+
+	private _extractDocumentsFromContext(data: {
+		documents?: unknown[];
+		context?: unknown;
+	}): unknown[] {
+		if (Array.isArray(data.documents)) return data.documents;
+		if (Array.isArray(data.context)) return data.context;
+		if (!data.context || typeof data.context !== "object") return [];
+
+		const context = data.context as {
+			documents?: unknown[];
+			source_chunks?: unknown[];
+			chunks?: unknown[];
+		};
+		if (Array.isArray(context.documents)) return context.documents;
+		if (Array.isArray(context.source_chunks)) return context.source_chunks;
+		if (Array.isArray(context.chunks)) return context.chunks;
+		return [context];
 	}
 
 	// ── SSE parser ───────────────────────────────────────────────────────────

@@ -34,13 +34,14 @@ GraphRAG-Server provides the ingestion and retrieval pipeline.
 - **Four operations** on both nodes:
   | Operation | What it does |
   | --- | --- |
-  | **Ask Question** | Answer a natural-language question from the knowledge graph. |
+  | **Ask Question** | Either return a server-generated answer or retrieve context only (`documents`) for your own chat model. |
   | **Ingest Text** | Ingest a plain-text or Markdown document. |
   | **Ingest GitHub Repo** | Discover and ingest every Markdown file in a public GitHub repo. |
   | **List Documents** | List everything that has been ingested. |
 - **Advanced ingest options** — chunking strategy, chunk size and overlap, entity
   types, and duplicate-resolution strategy.
 - **Retrieval strategies** — `auto`, `local` (fast, single-hop), or `multi_path`
+  with retriever/generator split support (retrieve in FalkorDB, generate in your chat model).
   (deeper, multi-hop).
 - **Importable example workflows** for every operation (see [`workflows/`](workflows)).
 
@@ -58,8 +59,9 @@ API (`/api/ingest`, `/api/query`, `/api/documents`, …).
 
 - **n8n** `>= 1.0` (self-hosted, so you can install community nodes).
 - A reachable **FalkorDB GraphRAG-Server** instance — see its
-  [setup guide](https://github.com/FalkorDB/GraphRAG-Server). Note the base URL
-  (e.g. `http://localhost:8000`) and a bearer token if the server has auth enabled.
+  [setup guide](https://github.com/FalkorDB/GraphRAG-Server). For production hosted usage,
+  use `https://graphrag.falkordb.com` plus an API token from
+  **Settings → API Tokens**.
 
 ## Installation
 
@@ -91,7 +93,7 @@ Both nodes use a single credential, **FalkorDB GraphRAG Server API**:
 | Field | Required | Description |
 | --- | --- | --- |
 | **Server URL** | yes | Base URL of your GraphRAG-Server, e.g. `http://localhost:8000`. |
-| **Bearer Token** | no | Token sent as `Authorization: Bearer …`. Leave blank if the server runs with auth disabled. |
+| **API Token** | no | Token sent as `Authorization: ****** Create it in GraphRAG-Server **Settings → API Tokens**. |
 
 ## Usage
 
@@ -99,7 +101,24 @@ Both nodes use a single credential, **FalkorDB GraphRAG Server API**:
 
 Drop the node into any workflow, pick an **Operation**, and wire it inline. For
 example, **Ask Question** takes a `Question` and a `Retrieval Strategy` and outputs
-the answer as JSON. See [`workflows/04_action_ask_question.json`](workflows/04_action_ask_question.json).
+either:
+
+- `Answer` mode: the server-generated answer, or
+- `Retrieve only` mode: `{ question, documents, count }` for your own downstream LLM/chat model.
+
+See [`workflows/04_action_ask_question.json`](workflows/04_action_ask_question.json).
+
+
+
+### Retriever/generator split (recommended)
+
+Use FalkorDB as retriever and your n8n chat model as generator:
+
+```text
+[Question] → FalkorDB Graph RAG (Retrieve only) → documents/context → Chat Model → answer
+```
+
+See [`workflows/10_action_retrieve_only_chat_model.json`](workflows/10_action_retrieve_only_chat_model.json).
 
 ### As an AI Agent tool — FalkorDB Graph RAG Tool
 
@@ -125,6 +144,7 @@ need the **FalkorDB GraphRAG Server API** credential, and the AI Agent tool exam
 | `06_tool_ingest_github.json` | AI Agent tool | Ingest GitHub Repo |
 | `07_tool_list_documents.json` | AI Agent tool | List Documents |
 | `08_tool_ask_question.json` | AI Agent tool | Ask Question |
+| `10_action_retrieve_only_chat_model.json` | pipeline + chat model | Retrieve only → generate final answer |
 
 ## Contributing
 

@@ -48,10 +48,10 @@ describe("GraphRagClient constructor", () => {
 		expect(mockFetch).toHaveBeenCalledWith("http://localhost:8000/api/query", expect.any(Object));
 	});
 
-	it("includes Authorization header when bearerToken provided", async () => {
+	it("includes Authorization header when apiToken provided", async () => {
 		const client = new GraphRagClient({
 			serverUrl: "http://localhost:8000",
-			bearerToken: "mytoken",
+			apiToken: "mytoken",
 		});
 		mockFetch.mockResolvedValueOnce(okJson({ answer: "ok" }));
 		await client.question("test");
@@ -59,7 +59,7 @@ describe("GraphRagClient constructor", () => {
 		expect((init as RequestInit).headers).toMatchObject({ Authorization: "Bearer mytoken" });
 	});
 
-	it("omits Authorization header when no bearerToken", async () => {
+	it("omits Authorization header when no apiToken", async () => {
 		const client = new GraphRagClient({ serverUrl: "http://localhost:8000" });
 		mockFetch.mockResolvedValueOnce(okJson({ answer: "ok" }));
 		await client.question("test");
@@ -83,6 +83,9 @@ describe("GraphRagClient.question", () => {
 			"http://localhost:8000/api/query",
 			expect.objectContaining({ method: "POST" }),
 		);
+		const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
+		expect(body.return_context).toBe(false);
+		expect(body.skip_generation).toBe(false);
 	});
 
 	it("sends strategy when provided", async () => {
@@ -116,6 +119,30 @@ describe("GraphRagClient.question", () => {
 		mockFetch.mockResolvedValueOnce(okJson({}));
 		const result = await client.question("Q");
 		expect(result.answer).toBe("");
+	});
+
+	it("supports retrieve-only mode using skip generation", async () => {
+		mockFetch.mockResolvedValueOnce(
+			okJson({
+				context: {
+					source_chunks: [{ source_doc: "doc-1", text: "retrieved chunk" }],
+				},
+			}),
+		);
+		const result = await client.question("Q", { responseMode: "retrieve_only" });
+		const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
+		expect(body.return_context).toBe(true);
+		expect(body.skip_generation).toBe(true);
+		expect(result).toEqual({
+			documents: [{ source_doc: "doc-1", text: "retrieved chunk" }],
+			count: 1,
+		});
+	});
+
+	it("uses documents array directly in retrieve-only mode", async () => {
+		mockFetch.mockResolvedValueOnce(okJson({ documents: [{ id: "a" }, { id: "b" }] }));
+		const result = await client.question("Q", { responseMode: "retrieve_only" });
+		expect(result).toEqual({ documents: [{ id: "a" }, { id: "b" }], count: 2 });
 	});
 });
 

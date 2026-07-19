@@ -27,10 +27,12 @@ function makeContext(
 ): IExecuteFunctions {
 	return {
 		getInputData: vi.fn(() => [{ json: {} }]),
-		getNodeParameter: vi.fn((name: string) => params[name] ?? undefined),
+		getNodeParameter: vi.fn(
+			(name: string, _itemIndex: number, fallback?: unknown) => params[name] ?? fallback,
+		),
 		getCredentials: vi.fn(async () => ({
 			serverUrl: "http://localhost:8000",
-			bearerToken: "token",
+			apiToken: "token",
 			...credentialOverrides,
 		})),
 		getNode: vi.fn(() => ({ name: "FalkorDB Graph RAG" })),
@@ -54,12 +56,18 @@ describe("GraphRagAction — question operation", () => {
 			questionText: "What is the answer?",
 			queryStrategy: "auto",
 		});
-		expect(mockQuestion).toHaveBeenCalledWith("What is the answer?", { strategy: undefined });
+		expect(mockQuestion).toHaveBeenCalledWith("What is the answer?", {
+			strategy: undefined,
+			responseMode: "answer",
+		});
 	});
 
 	it("passes non-auto strategy to client", async () => {
 		await run({ operation: "question", questionText: "Q", queryStrategy: "local" });
-		expect(mockQuestion).toHaveBeenCalledWith("Q", { strategy: "local" });
+		expect(mockQuestion).toHaveBeenCalledWith("Q", {
+			strategy: "local",
+			responseMode: "answer",
+		});
 	});
 
 	it("returns answer in output json", async () => {
@@ -69,6 +77,28 @@ describe("GraphRagAction — question operation", () => {
 			queryStrategy: "auto",
 		});
 		expect(result.json).toMatchObject({ question: "Q", answer: "The answer is 42." });
+	});
+
+	it("supports retrieve-only mode", async () => {
+		mockQuestion.mockResolvedValueOnce({
+			documents: [{ source_doc: "doc-1", content: "context" }],
+			count: 1,
+		});
+		const [[result]] = await run({
+			operation: "question",
+			questionText: "Q",
+			queryStrategy: "auto",
+			responseMode: "retrieveOnly",
+		});
+		expect(mockQuestion).toHaveBeenCalledWith("Q", {
+			strategy: undefined,
+			responseMode: "retrieve_only",
+		});
+		expect(result.json).toMatchObject({
+			question: "Q",
+			documents: [{ source_doc: "doc-1" }],
+			count: 1,
+		});
 	});
 });
 

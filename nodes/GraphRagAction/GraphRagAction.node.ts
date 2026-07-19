@@ -131,7 +131,8 @@ export class GraphRagAction implements INodeType {
 				type: "string",
 				default: "",
 				placeholder: "e.g. knowledge_graph",
-				description: "Name of the graph to operate on. Leave blank to use the server default.",
+				description:
+					"Graph name for self-hosted or predefined-graph servers. On hosted FalkorDB GraphRAG, the API token already selects your graph.",
 			},
 			{
 				displayName: "Operation",
@@ -177,6 +178,19 @@ export class GraphRagAction implements INodeType {
 				default: "",
 				placeholder: "What servers are in the network?",
 				description: "The natural-language question to ask the knowledge graph",
+				displayOptions: { show: { operation: ["question"] } },
+			},
+			{
+				displayName: "Response Mode",
+				name: "responseMode",
+				type: "options",
+				options: [
+					{ name: "Answer", value: "answer" },
+					{ name: "Retrieve Only", value: "retrieveOnly" },
+				],
+				default: "answer",
+				description:
+					"Answer returns the server-generated answer. Retrieve only returns ranked context documents for your own downstream chat model.",
 				displayOptions: { show: { operation: ["question"] } },
 			},
 			{
@@ -276,7 +290,7 @@ export class GraphRagAction implements INodeType {
 			const graphName = (this.getNodeParameter("graphName", i, "") as string).trim();
 			const client = new GraphRagClient({
 				serverUrl: credentials.serverUrl as string,
-				bearerToken: (credentials.bearerToken as string) || undefined,
+				apiToken: (credentials.apiToken as string) || undefined,
 				graphName: graphName || undefined,
 			});
 			const operation = this.getNodeParameter("operation", i) as string;
@@ -284,12 +298,22 @@ export class GraphRagAction implements INodeType {
 				if (operation === "question") {
 					const q = this.getNodeParameter("questionText", i) as string;
 					const strategy = this.getNodeParameter("queryStrategy", i) as string;
+					const responseMode = this.getNodeParameter("responseMode", i, "answer") as string;
 					const opts: QueryOptions = {
 						strategy: strategy === "auto" ? undefined : (strategy as QueryOptions["strategy"]),
+						responseMode: responseMode === "retrieveOnly" ? "retrieve_only" : "answer",
 					};
 					const result = await client.question(q, opts);
+					const output =
+						responseMode === "retrieveOnly"
+							? {
+									question: q,
+									documents: (result as { documents?: unknown[] }).documents ?? [],
+									count: (result as { count?: number }).count ?? 0,
+								}
+							: { question: q, ...result };
 					returnData.push({
-						json: { question: q, ...result },
+						json: output,
 						pairedItem: { item: i },
 					});
 				} else if (operation === "ingest") {
