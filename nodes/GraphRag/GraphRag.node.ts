@@ -139,7 +139,7 @@ export class GraphRag implements INodeType {
 				default: "",
 				placeholder: "e.g. knowledge_graph",
 				description:
-					"Graph name for self-hosted or predefined-graph servers. On hosted FalkorDB GraphRAG, the API token already selects your graph.",
+					"Name of the graph to operate on. Leave blank to use your default graph. On hosted FalkorDB GraphRAG, this selects among graphs owned by your API token; on self-hosted, this is the direct graph name.",
 			},
 			// ── Operation ─────────────────────────────────────────────────────────
 			{

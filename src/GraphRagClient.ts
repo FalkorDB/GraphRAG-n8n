@@ -125,7 +125,7 @@ export class GraphRagClient {
 			body: JSON.stringify({
 				question: q,
 				return_context: retrieveOnly,
-				skip_generation: retrieveOnly,
+				retrieve_only: retrieveOnly,
 				history: opts.history ?? [],
 				strategy: opts.strategy ?? null,
 				...(this.graphName ? { graph_name: this.graphName } : {}),

@@ -85,7 +85,7 @@ describe("GraphRagClient.question", () => {
 		);
 		const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
 		expect(body.return_context).toBe(false);
-		expect(body.skip_generation).toBe(false);
+		expect(body.retrieve_only).toBe(false);
 	});
 
 	it("sends strategy when provided", async () => {
@@ -121,7 +121,7 @@ describe("GraphRagClient.question", () => {
 		expect(result.answer).toBe("");
 	});
 
-	it("supports retrieve-only mode using skip generation", async () => {
+	it("supports retrieve-only mode", async () => {
 		mockFetch.mockResolvedValueOnce(
 			okJson({
 				context: {
@@ -132,7 +132,7 @@ describe("GraphRagClient.question", () => {
 		const result = await client.question("Q", { responseMode: "retrieve_only" });
 		const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
 		expect(body.return_context).toBe(true);
-		expect(body.skip_generation).toBe(true);
+		expect(body.retrieve_only).toBe(true);
 		expect(result).toEqual({
 			documents: [{ source_doc: "doc-1", text: "retrieved chunk" }],
 			count: 1,
