@@ -115,6 +115,26 @@ describe("GraphRagClient.question", () => {
 		await expect(client.question("Q")).rejects.toThrow("Query failed (HTTP 500)");
 	});
 
+	it("surfaces server detail verbatim when provided", async () => {
+		mockFetch.mockResolvedValueOnce(
+			errorResponse(
+				403,
+				JSON.stringify({
+					detail: "Graph 'x' runs on the deployment's LLM key and isn't available via the API.",
+				}),
+			),
+		);
+		await expect(client.question("Q")).rejects.toThrow(
+			"Graph 'x' runs on the deployment's LLM key and isn't available via the API.",
+		);
+	});
+
+	it("throws timeout error when request aborts", async () => {
+		const abortError = Object.assign(new Error("aborted"), { name: "AbortError" });
+		mockFetch.mockRejectedValueOnce(abortError);
+		await expect(client.question("Q")).rejects.toThrow("Request timed out after 60 seconds");
+	});
+
 	it("returns empty string answer when field missing", async () => {
 		mockFetch.mockResolvedValueOnce(okJson({}));
 		const result = await client.question("Q");
@@ -187,7 +207,7 @@ describe("GraphRagClient.ingest", () => {
 
 	it("throws on non-ok response", async () => {
 		mockFetch.mockResolvedValueOnce(errorResponse(422, "bad request"));
-		await expect(client.ingest("text")).rejects.toThrow("Ingest failed (HTTP 422)");
+		await expect(client.ingest("text")).rejects.toThrow("Ingest failed (HTTP 422).");
 	});
 
 	it("appends chunking options to form", async () => {
@@ -211,6 +231,13 @@ describe("GraphRagClient.ingest", () => {
 		await client.ingest("text", "doc.txt", { entityTypes: "PERSON,ORG" });
 		const form = (mockFetch.mock.calls[0][1] as RequestInit).body as FormData;
 		expect(form.get("entity_types")).toBe("PERSON,ORG");
+	});
+
+	it("appends skip_finalize when requested", async () => {
+		mockFetch.mockResolvedValueOnce(okText(sseComplete()));
+		await client.ingest("text", "doc.txt", { skipFinalize: true });
+		const form = (mockFetch.mock.calls[0][1] as RequestInit).body as FormData;
+		expect(form.get("skip_finalize")).toBe("true");
 	});
 });
 
@@ -258,9 +285,7 @@ describe("GraphRagClient.ingestBuffer", () => {
 
 	it("throws on non-ok response", async () => {
 		mockFetch.mockResolvedValueOnce(errorResponse(500, "boom"));
-		await expect(client.ingestBuffer(Buffer.from("x"), "doc.txt")).rejects.toThrow(
-			"Ingest failed (HTTP 500)",
-		);
+		await expect(client.ingestBuffer(Buffer.from("x"), "doc.txt")).rejects.toThrow("Ingest failed");
 	});
 });
 
@@ -298,7 +323,7 @@ describe("GraphRagClient.listDocuments", () => {
 
 	it("throws on non-ok response", async () => {
 		mockFetch.mockResolvedValueOnce(errorResponse(403, "forbidden"));
-		await expect(client.listDocuments()).rejects.toThrow("List documents failed (HTTP 403)");
+		await expect(client.listDocuments()).rejects.toThrow("List documents failed (HTTP 403).");
 	});
 });
 
@@ -323,7 +348,8 @@ describe("GraphRagClient.ingestGithub", () => {
 			.mockResolvedValueOnce(okText("file one content")) // raw.githubusercontent fetch 1
 			.mockResolvedValueOnce(okText(sseComplete(2, 1, 1))) // ingest 1
 			.mockResolvedValueOnce(okText("file two content")) // raw.githubusercontent fetch 2
-			.mockResolvedValueOnce(okText(sseComplete(3, 2, 1))); // ingest 2
+			.mockResolvedValueOnce(okText(sseComplete(3, 2, 1))) // ingest 2
+			.mockResolvedValueOnce(okText('data: {"status":"complete"}')); // finalize
 
 		const result = await client.ingestGithub("https://github.com/FalkorDB/GraphRAG-SDK");
 		expect(result.filesIngested).toBe(2);
@@ -331,6 +357,13 @@ describe("GraphRagClient.ingestGithub", () => {
 		expect(result.totalRelationshipsCreated).toBe(3);
 		expect(result.files).toEqual(["README.md", "docs/index.md"]);
 		expect(result.skippedFiles).toEqual([]);
+		expect(result.finalized).toBe(true);
+
+		const ingest1Form = (mockFetch.mock.calls[2][1] as RequestInit).body as FormData;
+		const ingest2Form = (mockFetch.mock.calls[4][1] as RequestInit).body as FormData;
+		expect(ingest1Form.get("skip_finalize")).toBe("true");
+		expect(ingest2Form.get("skip_finalize")).toBe("true");
+		expect(mockFetch.mock.calls[5][0]).toBe("http://localhost:8000/api/ingest/finalize");
 	});
 
 	it("skips files that fail to fetch", async () => {
@@ -348,11 +381,15 @@ describe("GraphRagClient.ingestGithub", () => {
 			)
 			.mockResolvedValueOnce(okText("content")) // good.md raw
 			.mockResolvedValueOnce(okText(sseComplete(1, 0, 1))) // good.md ingest
-			.mockResolvedValueOnce(errorResponse(404)); // bad.md raw
+			.mockResolvedValueOnce(errorResponse(404)) // bad.md raw
+			.mockResolvedValueOnce(okText('data: {"status":"complete"}')); // finalize
 
 		const result = await client.ingestGithub("https://github.com/org/repo");
 		expect(result.filesIngested).toBe(1);
-		expect(result.skippedFiles).toEqual(["bad.md"]);
+		expect(result.skippedFiles).toEqual([
+			{ path: "bad.md", reason: "Failed to fetch file content (HTTP 404)" },
+		]);
+		expect(result.finalized).toBe(true);
 	});
 
 	it("throws when preview returns no files", async () => {

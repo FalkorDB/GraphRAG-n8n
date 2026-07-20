@@ -198,16 +198,28 @@ export class GraphRagAction implements INodeType {
 				name: "queryStrategy",
 				type: "options",
 				options: [
-					{ name: "Auto (Default)", value: "auto" },
-					{ name: "Local — Fast, Single-Hop", value: "local" },
+					{ name: "Local (Default) — Fast, Single-Hop", value: "local" },
+					{ name: "Auto", value: "auto" },
 					{ name: "Multi-Path — Deeper, Multi-Hop", value: "multi_path" },
 				],
-				default: "auto",
+				default: "local",
 				description: "How the server retrieves context",
 				displayOptions: { show: { operation: ["question"] } },
 			},
 
 			// ── Ingest Text ───────────────────────────────────────────────────────
+			{
+				displayName: "Input Source",
+				name: "ingestSource",
+				type: "options",
+				options: [
+					{ name: "Text", value: "text" },
+					{ name: "Binary File", value: "binary" },
+				],
+				default: "text",
+				description: "Where to read the content to ingest from",
+				displayOptions: { show: { operation: ["ingest"] } },
+			},
 			{
 				displayName: "Document Text",
 				name: "documentText",
@@ -216,14 +228,23 @@ export class GraphRagAction implements INodeType {
 				default: "",
 				placeholder: "Paste your document text here, or use an expression like {{ $json.text }}",
 				description: "Text to ingest. Supports plain text and markdown.",
-				displayOptions: { show: { operation: ["ingest"] } },
+				displayOptions: { show: { operation: ["ingest"], ingestSource: ["text"] } },
+			},
+			{
+				displayName: "Binary Property",
+				name: "binaryPropertyName",
+				type: "string",
+				default: "data",
+				description: "Name of the input binary property containing the file to ingest",
+				displayOptions: { show: { operation: ["ingest"], ingestSource: ["binary"] } },
 			},
 			{
 				displayName: "Filename",
 				name: "filename",
 				type: "string",
 				default: "document.txt",
-				description: "Filename hint for the server. Use .txt for plain text, .md for markdown.",
+				description:
+					"Filename hint for the server. Use .txt/.md for text input and .pdf for binary PDF input.",
 				displayOptions: { show: { operation: ["ingest"] } },
 			},
 
@@ -291,16 +312,17 @@ export class GraphRagAction implements INodeType {
 			const client = new GraphRagClient({
 				serverUrl: credentials.serverUrl as string,
 				apiToken: (credentials.apiToken as string) || undefined,
+				requestTimeoutSeconds: Number(credentials.requestTimeoutSeconds ?? 60),
 				graphName: graphName || undefined,
 			});
 			const operation = this.getNodeParameter("operation", i) as string;
 			try {
 				if (operation === "question") {
 					const q = this.getNodeParameter("questionText", i) as string;
-					const strategy = this.getNodeParameter("queryStrategy", i) as string;
+					const strategy = this.getNodeParameter("queryStrategy", i, "local") as string;
 					const responseMode = this.getNodeParameter("responseMode", i, "answer") as string;
 					const opts: QueryOptions = {
-						strategy: strategy === "auto" ? undefined : (strategy as QueryOptions["strategy"]),
+						strategy: strategy as QueryOptions["strategy"],
 						responseMode: responseMode === "retrieveOnly" ? "retrieve_only" : "answer",
 					};
 					const result = await client.question(q, opts);
@@ -317,10 +339,24 @@ export class GraphRagAction implements INodeType {
 						pairedItem: { item: i },
 					});
 				} else if (operation === "ingest") {
-					const text = this.getNodeParameter("documentText", i) as string;
 					const filename = this.getNodeParameter("filename", i) as string;
+					const source = this.getNodeParameter("ingestSource", i, "text") as "text" | "binary";
 					const opts = getIngestOpts(i);
-					const result = await client.ingest(text, filename, opts);
+					const result =
+						source === "binary"
+							? await client.ingestBuffer(
+									await this.helpers.getBinaryDataBuffer(
+										i,
+										this.getNodeParameter("binaryPropertyName", i, "data") as string,
+									),
+									filename,
+									opts,
+								)
+							: await client.ingest(
+									this.getNodeParameter("documentText", i) as string,
+									filename,
+									opts,
+								);
 					returnData.push({
 						json: { filename, ...result },
 						pairedItem: { item: i },
@@ -349,7 +385,7 @@ export class GraphRagAction implements INodeType {
 						pairedItem: { item: i },
 					});
 				} else {
-					throw err;
+					throw new NodeOperationError(this.getNode(), (err as Error).message, { itemIndex: i });
 				}
 			}
 		}

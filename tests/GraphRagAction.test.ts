@@ -1,18 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { IExecuteFunctions } from "n8n-workflow";
 
-const { mockQuestion, mockIngest, mockIngestGithub, mockListDocuments } = vi.hoisted(() => ({
-	mockQuestion: vi.fn(),
-	mockIngest: vi.fn(),
-	mockIngestGithub: vi.fn(),
-	mockListDocuments: vi.fn(),
-}));
+const { mockQuestion, mockIngest, mockIngestBuffer, mockIngestGithub, mockListDocuments } =
+	vi.hoisted(() => ({
+		mockQuestion: vi.fn(),
+		mockIngest: vi.fn(),
+		mockIngestBuffer: vi.fn(),
+		mockIngestGithub: vi.fn(),
+		mockListDocuments: vi.fn(),
+	}));
 
 vi.mock("../src/GraphRagClient", () => ({
 	GraphRagClient: vi.fn(function () {
 		return {
 			question: mockQuestion,
 			ingest: mockIngest,
+			ingestBuffer: mockIngestBuffer,
 			ingestGithub: mockIngestGithub,
 			listDocuments: mockListDocuments,
 		};
@@ -33,6 +36,7 @@ function makeContext(
 		getCredentials: vi.fn(async () => ({
 			serverUrl: "http://localhost:8000",
 			apiToken: "token",
+			requestTimeoutSeconds: 60,
 			...credentialOverrides,
 		})),
 		getNode: vi.fn(() => ({ name: "FalkorDB Graph RAG" })),
@@ -57,7 +61,7 @@ describe("GraphRagAction — question operation", () => {
 			queryStrategy: "auto",
 		});
 		expect(mockQuestion).toHaveBeenCalledWith("What is the answer?", {
-			strategy: undefined,
+			strategy: "auto",
 			responseMode: "answer",
 		});
 	});
@@ -91,7 +95,7 @@ describe("GraphRagAction — question operation", () => {
 			responseMode: "retrieveOnly",
 		});
 		expect(mockQuestion).toHaveBeenCalledWith("Q", {
-			strategy: undefined,
+			strategy: "auto",
 			responseMode: "retrieve_only",
 		});
 		expect(result.json).toMatchObject({
@@ -120,6 +124,25 @@ describe("GraphRagAction — ingest operation", () => {
 			showAdvanced: false,
 		});
 		expect(mockIngest).toHaveBeenCalledWith("hello world", "doc.txt", {});
+	});
+
+	it("reads binary input when ingest source is binary", async () => {
+		const node = new GraphRagAction();
+		const ctx = makeContext({
+			operation: "ingest",
+			ingestSource: "binary",
+			binaryPropertyName: "file",
+			filename: "report.pdf",
+			showAdvanced: false,
+		});
+		(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer = vi
+			.fn()
+			.mockResolvedValue(Buffer.from("pdf"));
+		await node.execute.call(ctx as unknown as IExecuteFunctions);
+		expect(
+			(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer,
+		).toHaveBeenCalledWith(0, "file");
+		expect(mockIngestBuffer).toHaveBeenCalledWith(expect.any(Uint8Array), "report.pdf", {});
 	});
 
 	it("passes advanced options when showAdvanced is true", async () => {

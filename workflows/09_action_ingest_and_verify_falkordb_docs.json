@@ -23,7 +23,7 @@
       "typeVersion": 1,
       "position": [340, 300],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": { "name": "FalkorDB GraphRAG Server account" }
       }
     },
 
@@ -40,7 +40,7 @@
       "typeVersion": 1,
       "position": [580, 100],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": { "name": "FalkorDB GraphRAG Server account" }
       }
     },
 
@@ -57,7 +57,7 @@
       "typeVersion": 1,
       "position": [580, 300],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": { "name": "FalkorDB GraphRAG Server account" }
       }
     },
 
@@ -74,7 +74,7 @@
       "typeVersion": 1,
       "position": [580, 500],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": { "name": "FalkorDB GraphRAG Server account" }
       }
     },
 
@@ -91,7 +91,7 @@
       "typeVersion": 1,
       "position": [820, 100],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": { "name": "FalkorDB GraphRAG Server account" }
       }
     },
 
@@ -108,7 +108,7 @@
       "typeVersion": 1,
       "position": [820, 300],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": { "name": "FalkorDB GraphRAG Server account" }
       }
     },
 
@@ -125,7 +125,7 @@
       "typeVersion": 1,
       "position": [820, 500],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": { "name": "FalkorDB GraphRAG Server account" }
       }
     },
 
@@ -142,7 +142,7 @@
       "typeVersion": 1,
       "position": [1060, 100],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": { "name": "FalkorDB GraphRAG Server account" }
       }
     },
 
@@ -159,7 +159,7 @@
       "typeVersion": 1,
       "position": [1060, 300],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": { "name": "FalkorDB GraphRAG Server account" }
       }
     },
 
@@ -176,7 +176,7 @@
       "typeVersion": 1,
       "position": [1060, 500],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": { "name": "FalkorDB GraphRAG Server account" }
       }
     }
   ],

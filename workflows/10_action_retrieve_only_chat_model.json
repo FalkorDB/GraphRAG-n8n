@@ -33,8 +33,7 @@
       "position": [650, 300],
       "credentials": {
         "falkorDbGraphRagApi": {
-          "id": "wifeKejSOW367A54",
-          "name": "FalkorDB GraphRAG Server account"
+                    "name": "FalkorDB GraphRAG Server account"
         }
       }
     },
@@ -76,8 +75,7 @@
       "position": [1110, 520],
       "credentials": {
         "openAiApi": {
-          "id": "uFLqPaGqhddJZ4y4",
-          "name": "OpenAI account"
+                    "name": "OpenAI account"
         }
       }
     }

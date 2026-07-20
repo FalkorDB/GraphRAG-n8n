@@ -6,6 +6,7 @@ describe("FalkorDbGraphRagApi credential", () => {
 	it("defines API token field and test request", () => {
 		const credential = new FalkorDbGraphRagApi();
 		const tokenField = credential.properties.find((p) => p.name === "apiToken");
+		const timeoutField = credential.properties.find((p) => p.name === "requestTimeoutSeconds");
 
 		expect(tokenField?.displayName).toBe("API Token");
 		expect(credential.authenticate).toMatchObject({
@@ -18,9 +19,10 @@ describe("FalkorDbGraphRagApi credential", () => {
 		});
 		expect(credential.test).toMatchObject({
 			request: {
-				url: "/api/documents",
+				url: "/api/graphs/available",
 				method: "GET",
 			},
 		});
+		expect(timeoutField?.default).toBe(60);
 	});
 });

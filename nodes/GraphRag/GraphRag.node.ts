@@ -121,11 +121,10 @@ export class GraphRag implements INodeType {
 		group: ["transform"],
 		version: 1,
 		description:
-			"Query or ingest data in a FalkorDB Graph RAG knowledge graph. " +
-			"Use 'Ask Question' to answer questions from the knowledge graph. " +
+			"Retrieve context from or ingest data into a FalkorDB Graph RAG knowledge graph. " +
+			"Use 'Retrieve Context' to fetch ranked context documents from the graph. " +
 			"Use 'Ingest Text' to add plain text or markdown. " +
-			"Use 'Ingest GitHub Repo' to ingest all markdown files from a GitHub repository URL. " +
-			"Use 'List Documents' to see what has been ingested.",
+			"Use 'Ingest GitHub Repo' to ingest all markdown files from a GitHub repository URL.",
 		defaults: { name: "FalkorDB Graph RAG Tool" },
 		inputs: [],
 		outputs: ["ai_tool"],
@@ -149,11 +148,11 @@ export class GraphRag implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
-						name: "Ask Question",
+						name: "Retrieve Context",
 						value: "question",
 						description:
-							"Ask a natural-language question; the server answers from its knowledge graph",
-						action: "Ask a question to the knowledge graph",
+							"Retrieve ranked context documents from the knowledge graph for downstream AI answering",
+						action: "Retrieve context from the knowledge graph",
 					},
 					{
 						name: "Ingest Text",
@@ -167,17 +166,11 @@ export class GraphRag implements INodeType {
 						description: "Ingest all markdown files from a public GitHub repository URL",
 						action: "Ingest a GitHub repository",
 					},
-					{
-						name: "List Documents",
-						value: "listDocuments",
-						description: "List all documents that have been ingested into the knowledge graph",
-						action: "List ingested documents",
-					},
 				],
 				default: "question",
 			},
 
-			// ── Ask Question ─────────────────────────────────────────────────────
+			// ── Retrieve Context ────────────────────────────────────────────────
 			{
 				displayName: "Question",
 				name: "questionText",
@@ -185,20 +178,8 @@ export class GraphRag implements INodeType {
 				typeOptions: { rows: 3 },
 				default:
 					'={{ $fromAI("question", "Natural-language question to ask the knowledge graph. Only use this for questions, never for ingesting URLs or text.") }}',
-				description: "The question to ask. The server answers using its LLM and knowledge graph.",
-				displayOptions: { show: { operation: ["question"] } },
-			},
-			{
-				displayName: "Response Mode",
-				name: "responseMode",
-				type: "options",
-				options: [
-					{ name: "Answer", value: "answer" },
-					{ name: "Retrieve Only", value: "retrieveOnly" },
-				],
-				default: "answer",
 				description:
-					"Answer returns the server-generated answer. Retrieve only returns ranked context documents for your own downstream chat model.",
+					"The question used to retrieve ranked context documents from the knowledge graph",
 				displayOptions: { show: { operation: ["question"] } },
 			},
 			{
@@ -206,16 +187,28 @@ export class GraphRag implements INodeType {
 				name: "queryStrategy",
 				type: "options",
 				options: [
-					{ name: "Auto (Default)", value: "auto" },
-					{ name: "Local — Fast, Single-Hop", value: "local" },
+					{ name: "Local (Default) — Fast, Single-Hop", value: "local" },
+					{ name: "Auto", value: "auto" },
 					{ name: "Multi-Path — Deeper, Multi-Hop", value: "multi_path" },
 				],
-				default: "auto",
-				description: "How the server retrieves context. Auto picks the best strategy.",
+				default: "local",
+				description: "How the server retrieves context",
 				displayOptions: { show: { operation: ["question"] } },
 			},
 
 			// ── Ingest Text ──────────────────────────────────────────────────────
+			{
+				displayName: "Input Source",
+				name: "ingestSource",
+				type: "options",
+				options: [
+					{ name: "Text", value: "text" },
+					{ name: "Binary File", value: "binary" },
+				],
+				default: "text",
+				description: "Where to read the content to ingest from",
+				displayOptions: { show: { operation: ["ingest"] } },
+			},
 			{
 				displayName: "Document Text",
 				name: "documentText",
@@ -224,14 +217,23 @@ export class GraphRag implements INodeType {
 				default:
 					'={{ $fromAI("document_text", "The plain text or markdown content to ingest into the knowledge graph") }}',
 				description: "Text to ingest. Supports plain text and markdown.",
-				displayOptions: { show: { operation: ["ingest"] } },
+				displayOptions: { show: { operation: ["ingest"], ingestSource: ["text"] } },
+			},
+			{
+				displayName: "Binary Property",
+				name: "binaryPropertyName",
+				type: "string",
+				default: "data",
+				description: "Name of the input binary property containing the file to ingest",
+				displayOptions: { show: { operation: ["ingest"], ingestSource: ["binary"] } },
 			},
 			{
 				displayName: "Filename",
 				name: "filename",
 				type: "string",
 				default: "document.txt",
-				description: "Filename hint for the server. Use .txt for plain text, .md for markdown.",
+				description:
+					"Filename hint for the server. Use .txt/.md for text input and .pdf for binary PDF input.",
 				displayOptions: { show: { operation: ["ingest"] } },
 			},
 
@@ -299,36 +301,47 @@ export class GraphRag implements INodeType {
 			const client = new GraphRagClient({
 				serverUrl: credentials.serverUrl as string,
 				apiToken: (credentials.apiToken as string) || undefined,
+				requestTimeoutSeconds: Number(credentials.requestTimeoutSeconds ?? 60),
 				graphName: graphName || undefined,
 			});
 			const operation = this.getNodeParameter("operation", i) as string;
 			try {
 				if (operation === "question") {
 					const q = this.getNodeParameter("questionText", i) as string;
-					const strategy = this.getNodeParameter("queryStrategy", i) as string;
-					const responseMode = this.getNodeParameter("responseMode", i, "answer") as string;
+					const strategy = this.getNodeParameter("queryStrategy", i, "local") as string;
 					const opts: QueryOptions = {
-						strategy: strategy === "auto" ? undefined : (strategy as QueryOptions["strategy"]),
-						responseMode: responseMode === "retrieveOnly" ? "retrieve_only" : "answer",
+						strategy: strategy as QueryOptions["strategy"],
+						responseMode: "retrieve_only",
 					};
 					const result = await client.question(q, opts);
-					const output =
-						responseMode === "retrieveOnly"
-							? {
-									question: q,
-									documents: (result as { documents?: unknown[] }).documents ?? [],
-									count: (result as { count?: number }).count ?? 0,
-								}
-							: { question: q, ...result };
+					const output = {
+						question: q,
+						documents: (result as { documents?: unknown[] }).documents ?? [],
+						count: (result as { count?: number }).count ?? 0,
+					};
 					returnData.push({
 						json: output,
 						pairedItem: { item: i },
 					});
 				} else if (operation === "ingest") {
-					const text = this.getNodeParameter("documentText", i) as string;
 					const filename = this.getNodeParameter("filename", i) as string;
+					const source = this.getNodeParameter("ingestSource", i, "text") as "text" | "binary";
 					const opts = getIngestOpts(i);
-					const result = await client.ingest(text, filename, opts);
+					const result =
+						source === "binary"
+							? await client.ingestBuffer(
+									await this.helpers.getBinaryDataBuffer(
+										i,
+										this.getNodeParameter("binaryPropertyName", i, "data") as string,
+									),
+									filename,
+									opts,
+								)
+							: await client.ingest(
+									this.getNodeParameter("documentText", i) as string,
+									filename,
+									opts,
+								);
 					returnData.push({
 						json: { filename, ...result },
 						pairedItem: { item: i },
@@ -339,12 +352,6 @@ export class GraphRag implements INodeType {
 					const opts = getIngestOpts(i);
 					const result = await client.ingestGithub(repoUrl, ref, opts);
 					returnData.push({ json: { ...result }, pairedItem: { item: i } });
-				} else if (operation === "listDocuments") {
-					const docs = await client.listDocuments();
-					returnData.push({
-						json: { documents: docs, count: docs.length },
-						pairedItem: { item: i },
-					});
 				} else {
 					throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, {
 						itemIndex: i,
@@ -357,7 +364,7 @@ export class GraphRag implements INodeType {
 						pairedItem: { item: i },
 					});
 				} else {
-					throw err;
+					throw new NodeOperationError(this.getNode(), (err as Error).message, { itemIndex: i });
 				}
 			}
 		}

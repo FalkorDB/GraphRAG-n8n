@@ -21,9 +21,17 @@ export class FalkorDbGraphRagApi implements ICredentialType {
 			type: "string",
 			typeOptions: { password: true },
 			default: "",
-			placeholder: "https://graphrag.falkordb.com",
+			placeholder: "e.g. fkrtok_...",
 			description:
 				"API token for authentication. Create one from GraphRAG-Server Settings → API Tokens.",
+		},
+		{
+			displayName: "Request Timeout (Seconds)",
+			name: "requestTimeoutSeconds",
+			type: "number",
+			default: 60,
+			required: true,
+			description: "Maximum time to wait for each server request before aborting",
 		},
 	];
 
@@ -40,7 +48,7 @@ export class FalkorDbGraphRagApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL: "={{$credentials.serverUrl}}",
-			url: "/api/documents",
+			url: "/api/graphs/available",
 			method: "GET",
 		},
 	};

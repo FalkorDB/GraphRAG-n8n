@@ -19,7 +19,7 @@
       "typeVersion": 1,
       "position": [460, 300],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": { "name": "FalkorDB GraphRAG Server account" }
       }
     }
   ],

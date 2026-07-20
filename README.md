@@ -31,16 +31,22 @@ GraphRAG-Server provides the ingestion and retrieval pipeline.
 - **Two nodes, one credential** — use whichever fits your workflow:
   - **FalkorDB Graph RAG** — a regular pipeline node (`main` input/output).
   - **FalkorDB Graph RAG Tool** — an AI Agent tool node the LLM can call on its own.
-- **Four operations** on both nodes:
+- **Pipeline node operations**:
   | Operation | What it does |
   | --- | --- |
   | **Ask Question** | Either return a server-generated answer or retrieve context only (`documents`) for your own chat model. |
   | **Ingest Text** | Ingest a plain-text or Markdown document. |
   | **Ingest GitHub Repo** | Discover and ingest every Markdown file in a public GitHub repo. |
   | **List Documents** | List everything that has been ingested. |
+- **AI Tool node operations**:
+  | Operation | What it does |
+  | --- | --- |
+  | **Retrieve Context** | Retrieves ranked context documents for the agent's downstream LLM answer generation. |
+  | **Ingest Text** | Ingests plain-text, Markdown, or binary PDF input. |
+  | **Ingest GitHub Repo** | Discovers and ingests every Markdown file in a public GitHub repo. |
 - **Advanced ingest options** — chunking strategy, chunk size and overlap, entity
   types, and duplicate-resolution strategy.
-- **Retrieval strategies** — `auto`, `local` (fast, single-hop), or `multi_path`
+- **Retrieval strategies** — `local` (default, fast, single-hop), `auto`, or `multi_path`
   with retriever/generator split support (retrieve in FalkorDB, generate in your chat model).
   (deeper, multi-hop).
 - **Importable example workflows** for every operation (see [`workflows/`](workflows)).
@@ -93,7 +99,8 @@ Both nodes use a single credential, **FalkorDB GraphRAG Server API**:
 | Field | Required | Description |
 | --- | --- | --- |
 | **Server URL** | yes | Base URL of your GraphRAG-Server, e.g. `http://localhost:8000`. |
-| **API Token** | no | Token sent as `Authorization: ****** Create it in GraphRAG-Server **Settings → API Tokens**. |
+| **API Token** | no | Token sent in the `Authorization` header. Create it in GraphRAG-Server **Settings → API Tokens**. |
+| **Request Timeout (Seconds)** | yes | Per-request timeout. Requests abort when this limit is reached. |
 
 ## Usage
 
@@ -124,8 +131,8 @@ See [`workflows/10_action_retrieve_only_chat_model.json`](workflows/10_action_re
 
 Connect the tool node to an **AI Agent** node's `ai_tool` input. The agent decides
 when to call it and fills parameters from the conversation via the n8n `$fromAI`
-expressions, so the LLM can ingest documents and answer questions about the graph
-on its own. See [`workflows/08_tool_ask_question.json`](workflows/08_tool_ask_question.json).
+expressions, so the LLM can ingest content and retrieve graph context on its own.
+See [`workflows/08_tool_ask_question.json`](workflows/08_tool_ask_question.json).
 
 ### Example workflows
 
@@ -142,8 +149,8 @@ need the **FalkorDB GraphRAG Server API** credential, and the AI Agent tool exam
 | `04_action_ask_question.json` | pipeline | Ask Question |
 | `05_tool_ingest_text.json` | AI Agent tool | Ingest Text |
 | `06_tool_ingest_github.json` | AI Agent tool | Ingest GitHub Repo |
-| `07_tool_list_documents.json` | AI Agent tool | List Documents |
-| `08_tool_ask_question.json` | AI Agent tool | Ask Question |
+| `07_tool_list_documents.json` | AI Agent tool | Retrieve Context |
+| `08_tool_ask_question.json` | AI Agent tool | Retrieve Context |
 | `10_action_retrieve_only_chat_model.json` | pipeline + chat model | Retrieve only → generate final answer |
 
 ## Contributing

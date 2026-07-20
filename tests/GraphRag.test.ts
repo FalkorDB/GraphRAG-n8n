@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { IExecuteFunctions } from "n8n-workflow";
 
-const { mockQuestion, mockIngest, mockIngestGithub, mockListDocuments } = vi.hoisted(() => ({
+const { mockQuestion, mockIngest, mockIngestBuffer, mockIngestGithub } = vi.hoisted(() => ({
 	mockQuestion: vi.fn(),
 	mockIngest: vi.fn(),
+	mockIngestBuffer: vi.fn(),
 	mockIngestGithub: vi.fn(),
-	mockListDocuments: vi.fn(),
 }));
 
 vi.mock("../src/GraphRagClient", () => ({
@@ -13,8 +13,8 @@ vi.mock("../src/GraphRagClient", () => ({
 		return {
 			question: mockQuestion,
 			ingest: mockIngest,
+			ingestBuffer: mockIngestBuffer,
 			ingestGithub: mockIngestGithub,
-			listDocuments: mockListDocuments,
 		};
 	}),
 }));
@@ -30,6 +30,7 @@ function makeContext(params: Record<string, unknown>): IExecuteFunctions {
 		getCredentials: vi.fn(async () => ({
 			serverUrl: "http://localhost:8000",
 			apiToken: "token",
+			requestTimeoutSeconds: 60,
 		})),
 		getNode: vi.fn(() => ({ name: "FalkorDB Graph RAG Tool" })),
 		continueOnFail: vi.fn(() => false),
@@ -58,14 +59,13 @@ describe("GraphRag node description", () => {
 		expect(creds.some((c: { name: string }) => c.name === "falkorDbGraphRagApi")).toBe(true);
 	});
 
-	it("exposes all 4 operations", () => {
+	it("exposes retrieve and ingest operations", () => {
 		const opProp = node.description.properties.find(
 			(p: { name: string }) => p.name === "operation",
 		);
 		const values = ((opProp?.options ?? []) as Array<{ value: string }>).map((o) => o.value);
-		expect(values).toEqual(
-			expect.arrayContaining(["question", "ingest", "ingestGithub", "listDocuments"]),
-		);
+		expect(values).toEqual(expect.arrayContaining(["question", "ingest", "ingestGithub"]));
+		expect(values).not.toContain("listDocuments");
 	});
 
 	it("question field default uses $fromAI expression", () => {
@@ -86,21 +86,21 @@ describe("GraphRag — question operation", () => {
 			queryStrategy: "auto",
 		});
 		expect(mockQuestion).toHaveBeenCalledWith("What is in the graph?", {
-			strategy: undefined,
-			responseMode: "answer",
+			strategy: "auto",
+			responseMode: "retrieve_only",
 		});
-		expect(result.json).toMatchObject({ answer: "graph answer" });
+		expect(result.json).toMatchObject({ documents: [], count: 0 });
 	});
 
 	it("passes multi_path strategy", async () => {
 		await run({ operation: "question", questionText: "Q", queryStrategy: "multi_path" });
 		expect(mockQuestion).toHaveBeenCalledWith("Q", {
 			strategy: "multi_path",
-			responseMode: "answer",
+			responseMode: "retrieve_only",
 		});
 	});
 
-	it("supports retrieve-only mode", async () => {
+	it("returns retrieved context payload", async () => {
 		mockQuestion.mockResolvedValueOnce({
 			documents: [{ source_doc: "doc-1", content: "context" }],
 			count: 1,
@@ -112,7 +112,7 @@ describe("GraphRag — question operation", () => {
 			responseMode: "retrieveOnly",
 		});
 		expect(mockQuestion).toHaveBeenCalledWith("Q", {
-			strategy: undefined,
+			strategy: "auto",
 			responseMode: "retrieve_only",
 		});
 		expect(result.json).toMatchObject({
@@ -143,6 +143,25 @@ describe("GraphRag — ingest operation", () => {
 		expect(mockIngest).toHaveBeenCalledWith("some text", "doc.txt", {});
 		expect(result.json).toMatchObject({ nodesCreated: 3 });
 	});
+
+	it("supports binary ingest via helpers.getBinaryDataBuffer", async () => {
+		const node = new GraphRag();
+		const ctx = makeContext({
+			operation: "ingest",
+			ingestSource: "binary",
+			binaryPropertyName: "file",
+			filename: "report.pdf",
+			showAdvanced: false,
+		});
+		(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer = vi
+			.fn()
+			.mockResolvedValue(Buffer.from("pdf"));
+		await node.execute.call(ctx as unknown as IExecuteFunctions);
+		expect(
+			(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer,
+		).toHaveBeenCalledWith(0, "file");
+		expect(mockIngestBuffer).toHaveBeenCalledWith(expect.any(Uint8Array), "report.pdf", {});
+	});
 });
 
 describe("GraphRag — ingestGithub operation", () => {
@@ -170,20 +189,6 @@ describe("GraphRag — ingestGithub operation", () => {
 			{},
 		);
 		expect(result.json).toMatchObject({ filesIngested: 5 });
-	});
-});
-
-describe("GraphRag — listDocuments operation", () => {
-	beforeEach(() =>
-		mockListDocuments.mockResolvedValue([
-			{ id: "1", name: "acme.txt", size: 800, chunkCount: 5, entityCount: 12, relationCount: 8 },
-		]),
-	);
-
-	it("calls client.listDocuments and returns documents", async () => {
-		const [[result]] = await run({ operation: "listDocuments" });
-		expect(mockListDocuments).toHaveBeenCalledTimes(1);
-		expect(result.json).toMatchObject({ count: 1, documents: [{ name: "acme.txt" }] });
 	});
 });
 

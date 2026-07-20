@@ -1,5 +1,5 @@
 {
-  "name": "07 — Tool: List Documents",
+  "name": "07 — Tool: Retrieve Context",
   "nodes": [
     {
       "parameters": {},
@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { chatInput: \"List all documents that have been ingested into the knowledge graph.\" } }];"
+        "jsCode": "return [{ json: { chatInput: \"Retrieve context about the key topics in the knowledge graph.\" } }];"
       },
       "id": "set-input",
       "name": "Set Message",
@@ -28,7 +28,7 @@
     {
       "parameters": {
         "options": {
-          "systemMessage": "You are a knowledge graph assistant. When asked what documents are in the knowledge graph, use the FalkorDB Graph RAG tool to list them."
+          "systemMessage": "You are a knowledge graph assistant. Use the FalkorDB Graph RAG tool to retrieve relevant context from the knowledge graph before answering."
         }
       },
       "id": "ai-agent",
@@ -59,14 +59,15 @@
       ],
       "credentials": {
         "openAiApi": {
-          "id": "uFLqPaGqhddJZ4y4",
-          "name": "OpenAI account"
+                    "name": "OpenAI account"
         }
       }
     },
     {
       "parameters": {
-        "operation": "listDocuments"
+        "operation": "question",
+        "questionText": "={{ $fromAI(\"question\", \"Natural-language question used to retrieve context from the knowledge graph\") }}",
+        "queryStrategy": "local"
       },
       "id": "rag-tool",
       "name": "FalkorDB Graph RAG Tool",
@@ -78,8 +79,7 @@
       ],
       "credentials": {
         "falkorDbGraphRagApi": {
-          "id": "wifeKejSOW367A54",
-          "name": "FalkorDB GraphRAG Server account"
+                    "name": "FalkorDB GraphRAG Server account"
         }
       }
     }
@@ -134,6 +134,6 @@
     "executionOrder": "v1"
   },
   "meta": {
-    "description": "GraphRag tool node — List Documents operation. AI Agent lists all ingested documents on request."
+    "description": "GraphRag tool node — Retrieve Context operation. AI Agent retrieves graph context for downstream answering."
   }
 }
