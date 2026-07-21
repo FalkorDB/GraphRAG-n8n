@@ -56,14 +56,19 @@
       "position": [
         580,
         520
-      ]
+      ],
+      "credentials": {
+        "openAiApi": {
+          "name": "OpenAI account"
+        }
+      }
     },
     {
       "parameters": {
         "operation": "ingestGithub",
         "githubUrl": "={{ $fromAI(\"githubUrl\", \"Full GitHub repository URL to ingest, e.g. https://github.com/org/repo\") }}",
         "githubRef": "={{ $fromAI(\"githubRef\", \"Branch, tag, or commit SHA. Leave empty for default branch.\") }}",
-        "graphName": "knowledge_graph"
+        "graphName": "knowledge-graph"
       },
       "id": "rag-tool",
       "name": "FalkorDB Graph RAG Tool",

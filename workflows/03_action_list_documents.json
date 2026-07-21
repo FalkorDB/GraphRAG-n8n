@@ -15,7 +15,7 @@
     {
       "parameters": {
         "operation": "listDocuments",
-        "graphName": "knowledge_graph"
+        "graphName": "knowledge-graph"
       },
       "id": "rag-node",
       "name": "FalkorDB Graph RAG",

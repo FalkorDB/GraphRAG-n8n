@@ -17,7 +17,7 @@
         "operation": "ingestGithub",
         "githubUrl": "https://github.com/FalkorDB/GraphRAG-SDK",
         "githubRef": "",
-        "graphName": "knowledge_graph"
+        "graphName": "knowledge-graph"
       },
       "id": "rag-node",
       "name": "FalkorDB Graph RAG",

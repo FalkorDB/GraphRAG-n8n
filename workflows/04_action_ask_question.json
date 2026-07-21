@@ -17,7 +17,7 @@
         "operation": "question",
         "questionText": "What components are in the knowledge graph?",
         "queryStrategy": "auto",
-        "graphName": "knowledge_graph"
+        "graphName": "knowledge-graph"
       },
       "id": "rag-node",
       "name": "FalkorDB Graph RAG",
