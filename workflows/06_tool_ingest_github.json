@@ -56,18 +56,14 @@
       "position": [
         580,
         520
-      ],
-      "credentials": {
-        "openAiApi": {
-                    "name": "OpenAI account"
-        }
-      }
+      ]
     },
     {
       "parameters": {
         "operation": "ingestGithub",
         "githubUrl": "={{ $fromAI(\"githubUrl\", \"Full GitHub repository URL to ingest, e.g. https://github.com/org/repo\") }}",
-        "githubRef": "={{ $fromAI(\"githubRef\", \"Branch, tag, or commit SHA. Leave empty for default branch.\") }}"
+        "githubRef": "={{ $fromAI(\"githubRef\", \"Branch, tag, or commit SHA. Leave empty for default branch.\") }}",
+        "graphName": "knowledge_graph"
       },
       "id": "rag-tool",
       "name": "FalkorDB Graph RAG Tool",
@@ -79,7 +75,7 @@
       ],
       "credentials": {
         "falkorDbGraphRagApi": {
-                    "name": "FalkorDB GraphRAG Server account"
+          "name": "FalkorDB GraphRAG Server account"
         }
       }
     }

@@ -19,7 +19,7 @@ describe("FalkorDbGraphRagApi credential", () => {
 		});
 		expect(credential.test).toMatchObject({
 			request: {
-				url: "/api/graphs/available",
+				url: "/api/ingest/quota",
 				method: "GET",
 			},
 		});

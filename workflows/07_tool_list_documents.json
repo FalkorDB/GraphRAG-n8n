@@ -56,18 +56,14 @@
       "position": [
         580,
         520
-      ],
-      "credentials": {
-        "openAiApi": {
-                    "name": "OpenAI account"
-        }
-      }
+      ]
     },
     {
       "parameters": {
         "operation": "question",
         "questionText": "={{ $fromAI(\"question\", \"Natural-language question used to retrieve context from the knowledge graph\") }}",
-        "queryStrategy": "local"
+        "queryStrategy": "local",
+        "graphName": "knowledge_graph"
       },
       "id": "rag-tool",
       "name": "FalkorDB Graph RAG Tool",
@@ -79,7 +75,7 @@
       ],
       "credentials": {
         "falkorDbGraphRagApi": {
-                    "name": "FalkorDB GraphRAG Server account"
+          "name": "FalkorDB GraphRAG Server account"
         }
       }
     }

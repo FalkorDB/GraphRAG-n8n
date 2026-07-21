@@ -7,7 +7,10 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [200, 300]
+      "position": [
+        200,
+        300
+      ]
     },
     {
       "parameters": {
@@ -17,23 +20,30 @@
       "name": "Set Question",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [420, 300]
+      "position": [
+        420,
+        300
+      ]
     },
     {
       "parameters": {
         "operation": "question",
         "questionText": "={{ $json.question }}",
         "responseMode": "retrieveOnly",
-        "queryStrategy": "auto"
+        "queryStrategy": "auto",
+        "graphName": "knowledge_graph"
       },
       "id": "rag-retrieve-only",
       "name": "FalkorDB Retrieve Only",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [650, 300],
+      "position": [
+        650,
+        300
+      ],
       "credentials": {
         "falkorDbGraphRagApi": {
-                    "name": "FalkorDB GraphRAG Server account"
+          "name": "FalkorDB GraphRAG Server account"
         }
       }
     },
@@ -45,7 +55,10 @@
       "name": "Build Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 300]
+      "position": [
+        880,
+        300
+      ]
     },
     {
       "parameters": {
@@ -57,7 +70,10 @@
       "name": "Generate Final Answer",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
-      "position": [1110, 300]
+      "position": [
+        1110,
+        300
+      ]
     },
     {
       "parameters": {
@@ -72,12 +88,10 @@
       "name": "OpenAI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
-      "position": [1110, 520],
-      "credentials": {
-        "openAiApi": {
-                    "name": "OpenAI account"
-        }
-      }
+      "position": [
+        1110,
+        520
+      ]
     }
   ],
   "connections": {

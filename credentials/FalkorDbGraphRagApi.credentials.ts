@@ -48,7 +48,7 @@ export class FalkorDbGraphRagApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			baseURL: "={{$credentials.serverUrl}}",
-			url: "/api/graphs/available",
+			url: "/api/ingest/quota",
 			method: "GET",
 		},
 	};
