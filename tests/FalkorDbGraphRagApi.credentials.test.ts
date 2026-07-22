@@ -9,6 +9,7 @@ describe("FalkorDbGraphRagApi credential", () => {
 		const timeoutField = credential.properties.find((p) => p.name === "requestTimeoutSeconds");
 
 		expect(tokenField?.displayName).toBe("API Token");
+		expect(tokenField?.placeholder).toBe("e.g. grag_...");
 		expect(credential.authenticate).toMatchObject({
 			type: "generic",
 			properties: {

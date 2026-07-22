@@ -21,7 +21,7 @@ export class FalkorDbGraphRagApi implements ICredentialType {
 			type: "string",
 			typeOptions: { password: true },
 			default: "",
-			placeholder: "e.g. fkrtok_...",
+			placeholder: "e.g. grag_...",
 			description:
 				"API token for authentication. Create one from GraphRAG-Server Settings → API Tokens.",
 		},

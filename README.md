@@ -132,6 +132,18 @@ For **Ask Question**, choose a retrieval strategy and response mode:
 - `Retrieve Only` mode returns `{ question, documents, count }` so your own chat
   model can generate the final answer.
 
+The node intentionally returns retrieve-only `context` as received from
+GraphRAG-Server. If you see duplicated passages or `score: null`, verify with a
+direct server call first (outside n8n):
+
+```bash
+curl -sS -X POST "$SERVER/api/query?graph_name=<yourGraph>" \
+  -H "Authorization: ******" -H "X-Requested-With: XMLHttpRequest" \
+  -H "Content-Type: application/json" \
+  -d '{"question":"What are the main components?","retrieve_only":true,"return_context":true,"strategy":"local"}' \
+  | jq '.context'
+```
+
 See [`workflows/04_action_ask_question.json`](workflows/04_action_ask_question.json)
 and [`workflows/10_action_retrieve_only_chat_model.json`](workflows/10_action_retrieve_only_chat_model.json).
 
