@@ -39,7 +39,7 @@ export class FalkorDbGraphRagApi implements ICredentialType {
 		type: "generic" as const,
 		properties: {
 			headers: {
-				Authorization: "={{$credentials.apiToken ? 'Bearer ' + $credentials.apiToken : ''}}",
+				Authorization: "={{$credentials.apiToken ? 'Bearer ' + $credentials.apiToken : undefined}}",
 				"X-Requested-With": "XMLHttpRequest",
 			},
 		},

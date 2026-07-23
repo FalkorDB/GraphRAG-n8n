@@ -14,6 +14,8 @@ describe("FalkorDbGraphRagApi credential", () => {
 			type: "generic",
 			properties: {
 				headers: {
+					Authorization:
+						"={{$credentials.apiToken ? 'Bearer ' + $credentials.apiToken : undefined}}",
 					"X-Requested-With": "XMLHttpRequest",
 				},
 			},

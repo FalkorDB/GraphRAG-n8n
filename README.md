@@ -110,7 +110,6 @@ Both nodes share a single credential type — **FalkorDB GraphRAG Server API**:
 | --- | --- | --- |
 | **Server URL** | yes | Base URL of your GraphRAG-Server, e.g. `http://localhost:8000`. |
 | **API Token** | no | Sent as `Authorization: Bearer …`. Create it in GraphRAG-Server **Settings → API Tokens**. |
-
 | **Request Timeout (Seconds)** | yes | Per-request timeout. Requests abort when this limit is reached. |
 
 Create the credential once under **Credentials → New → FalkorDB GraphRAG Server API**
