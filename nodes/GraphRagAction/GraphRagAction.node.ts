@@ -19,6 +19,7 @@ const ADVANCED_INGEST_FIELDS = [
 		],
 		default: "sentence_token_cap",
 		description: "How the server splits the document into chunks",
+		hint: "Controls how text is split before extraction and indexing.",
 		displayOptions: {
 			show: { operation: ["ingest", "ingestGithub"], showAdvanced: [true] },
 		},
@@ -29,6 +30,7 @@ const ADVANCED_INGEST_FIELDS = [
 		type: "number" as const,
 		default: 256,
 		description: "Maximum tokens per chunk (64–2048). Used with sentence_token_cap.",
+		hint: "Use lower values for more granular chunks; higher values for more context per chunk.",
 		displayOptions: {
 			show: {
 				operation: ["ingest", "ingestGithub"],
@@ -43,6 +45,7 @@ const ADVANCED_INGEST_FIELDS = [
 		type: "number" as const,
 		default: 1,
 		description: "Sentences of overlap between consecutive chunks (0–10)",
+		hint: "Adds sentence overlap between chunks to preserve context continuity.",
 		displayOptions: {
 			show: {
 				operation: ["ingest", "ingestGithub"],
@@ -57,6 +60,7 @@ const ADVANCED_INGEST_FIELDS = [
 		type: "number" as const,
 		default: 1000,
 		description: "Tokens per chunk (100–5000). Used with fixed_size.",
+		hint: "Chunk size to use when Fixed Size chunking is selected.",
 		displayOptions: {
 			show: {
 				operation: ["ingest", "ingestGithub"],
@@ -71,6 +75,7 @@ const ADVANCED_INGEST_FIELDS = [
 		type: "number" as const,
 		default: 100,
 		description: "Overlap in tokens between consecutive fixed-size chunks",
+		hint: "Token overlap between fixed-size chunks to reduce context loss.",
 		displayOptions: {
 			show: {
 				operation: ["ingest", "ingestGithub"],
@@ -89,6 +94,7 @@ const ADVANCED_INGEST_FIELDS = [
 		],
 		default: "exact",
 		description: "How to resolve duplicate entities during ingestion",
+		hint: "Choose how duplicate entities discovered in different chunks are merged.",
 		displayOptions: {
 			show: { operation: ["ingest", "ingestGithub"], showAdvanced: [true] },
 		},
@@ -100,6 +106,7 @@ const ADVANCED_INGEST_FIELDS = [
 		default: "",
 		description:
 			"Comma-separated list of entity types to extract (e.g. Person,Organization). Leave blank to extract all types.",
+		hint: "Optional allow-list for entity classes to extract.",
 		displayOptions: {
 			show: { operation: ["ingest", "ingestGithub"], showAdvanced: [true] },
 		},
@@ -108,19 +115,19 @@ const ADVANCED_INGEST_FIELDS = [
 
 export class GraphRagAction implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: "FalkorDB Graph RAG",
+		displayName: "FalkorDB GraphRAG",
 		name: "graphRagAction",
 		icon: "file:falkordb-f.svg",
 		group: ["transform"],
 		version: 1,
 		description:
-			"Query or ingest data in a FalkorDB Graph RAG knowledge graph. " +
+			"Query or ingest data in a FalkorDB GraphRAG knowledge graph. " +
 			"Use 'Ask Question' to answer questions from the knowledge graph. " +
 			"Use 'Ingest Text' to add plain text or markdown. " +
 			"Use 'Ingest GitHub Repo' to ingest all markdown files from a GitHub repository. " +
 			"Use 'List Documents' to see what has been ingested. " +
 			"Connects directly in a pipeline (main input/output).",
-		defaults: { name: "FalkorDB Graph RAG" },
+		defaults: { name: "FalkorDB GraphRAG" },
 		inputs: ["main"],
 		outputs: ["main"],
 		credentials: [{ name: "falkorDbGraphRagApi", required: true }],
@@ -133,6 +140,7 @@ export class GraphRagAction implements INodeType {
 				placeholder: "e.g. knowledge_graph",
 				description:
 					"Name of the graph to operate on. Leave blank to use your default graph. On hosted FalkorDB GraphRAG, this selects among graphs owned by your API token; on self-hosted, this is the direct graph name.",
+				hint: "Optional graph identifier. Leave empty to use the server default graph.",
 			},
 			{
 				displayName: "Operation",
@@ -167,6 +175,7 @@ export class GraphRagAction implements INodeType {
 					},
 				],
 				default: "question",
+				hint: "Choose whether to ask questions, ingest content, or list documents.",
 			},
 
 			// ── Ask Question ──────────────────────────────────────────────────────
@@ -178,6 +187,7 @@ export class GraphRagAction implements INodeType {
 				default: "",
 				placeholder: "What servers are in the network?",
 				description: "The natural-language question to ask the knowledge graph",
+				hint: "Natural-language question that will be answered from the graph.",
 				displayOptions: { show: { operation: ["question"] } },
 			},
 			{
@@ -191,6 +201,7 @@ export class GraphRagAction implements INodeType {
 				default: "answer",
 				description:
 					"Answer returns the server-generated answer. Retrieve only returns ranked context documents for your own downstream chat model.",
+				hint: "Use Retrieve Only when another node will generate the final answer.",
 				displayOptions: { show: { operation: ["question"] } },
 			},
 			{
@@ -204,6 +215,7 @@ export class GraphRagAction implements INodeType {
 				],
 				default: "local",
 				description: "How the server retrieves context",
+				hint: "Local is fastest; Multi-Path is deeper; Auto lets the server choose.",
 				displayOptions: { show: { operation: ["question"] } },
 			},
 
@@ -218,6 +230,7 @@ export class GraphRagAction implements INodeType {
 				],
 				default: "text",
 				description: "Where to read the content to ingest from",
+				hint: "Select Text to paste content, or Binary File to ingest an incoming file.",
 				displayOptions: { show: { operation: ["ingest"] } },
 			},
 			{
@@ -228,6 +241,7 @@ export class GraphRagAction implements INodeType {
 				default: "",
 				placeholder: "Paste your document text here, or use an expression like {{ $json.text }}",
 				description: "Text to ingest. Supports plain text and markdown.",
+				hint: "Provide the document body in plain text or markdown format.",
 				displayOptions: { show: { operation: ["ingest"], ingestSource: ["text"] } },
 			},
 			{
@@ -236,15 +250,17 @@ export class GraphRagAction implements INodeType {
 				type: "string",
 				default: "data",
 				description: "Name of the input binary property containing the file to ingest",
+				hint: "Usually data, unless your incoming binary field uses a different key.",
 				displayOptions: { show: { operation: ["ingest"], ingestSource: ["binary"] } },
 			},
 			{
-				displayName: "Filename",
+				displayName: "Document Name",
 				name: "filename",
 				type: "string",
 				default: "document.txt",
 				description:
-					"Filename hint for the server. Use .txt/.md for text input and .pdf for binary PDF input.",
+					"Document name hint for the server. Use .txt/.md for text input and .pdf for binary PDF input.",
+				hint: "Document identifier and extension hint sent to the server.",
 				displayOptions: { show: { operation: ["ingest"] } },
 			},
 
@@ -256,6 +272,7 @@ export class GraphRagAction implements INodeType {
 				default: "",
 				placeholder: "https://github.com/FalkorDB/GraphRAG-SDK",
 				description: "URL of the public GitHub repository. Discovers and ingests all .md files.",
+				hint: "Public repository URL whose markdown files should be ingested.",
 				displayOptions: { show: { operation: ["ingestGithub"] } },
 			},
 			{
@@ -264,6 +281,7 @@ export class GraphRagAction implements INodeType {
 				type: "string",
 				default: "",
 				description: "Branch, tag, or commit SHA (leave blank for the default branch)",
+				hint: "Optional Git ref to pin ingestion to a specific branch, tag, or commit.",
 				displayOptions: { show: { operation: ["ingestGithub"] } },
 			},
 
@@ -274,6 +292,7 @@ export class GraphRagAction implements INodeType {
 				type: "boolean",
 				default: false,
 				description: "Whether to show advanced chunking and extraction options",
+				hint: "Enable extra controls for chunking and entity extraction.",
 				displayOptions: { show: { operation: ["ingest", "ingestGithub"] } },
 			},
 			...ADVANCED_INGEST_FIELDS,
@@ -358,7 +377,7 @@ export class GraphRagAction implements INodeType {
 									opts,
 								);
 					returnData.push({
-						json: { filename, ...result },
+						json: { documentName: filename, ...result },
 						pairedItem: { item: i },
 					});
 				} else if (operation === "ingestGithub") {

@@ -28,7 +28,7 @@
     {
       "parameters": {
         "options": {
-          "systemMessage": "You are a knowledge graph ingestion assistant. When given text, use the FalkorDB Graph RAG tool to ingest it into the knowledge graph."
+          "systemMessage": "You are a knowledge graph ingestion assistant. When given text, use the FalkorDB GraphRAG tool to ingest it into the knowledge graph."
         }
       },
       "id": "ai-agent",
@@ -71,7 +71,7 @@
         "graphName": "knowledge-graph"
       },
       "id": "rag-tool",
-      "name": "FalkorDB Graph RAG Tool",
+      "name": "FalkorDB GraphRAG Tool",
       "type": "n8n-nodes-falkordb-graphrag.graphRag",
       "typeVersion": 1,
       "position": [
@@ -119,7 +119,7 @@
         ]
       ]
     },
-    "FalkorDB Graph RAG Tool": {
+    "FalkorDB GraphRAG Tool": {
       "ai_tool": [
         [
           {

@@ -39,7 +39,7 @@ function makeContext(
 			requestTimeoutSeconds: 60,
 			...credentialOverrides,
 		})),
-		getNode: vi.fn(() => ({ name: "FalkorDB Graph RAG" })),
+		getNode: vi.fn(() => ({ name: "FalkorDB GraphRAG" })),
 		continueOnFail: vi.fn(() => false),
 		helpers: {},
 	} as unknown as IExecuteFunctions;
@@ -180,7 +180,7 @@ describe("GraphRagAction — ingest operation", () => {
 			showAdvanced: false,
 		});
 		expect(result.json).toMatchObject({
-			filename: "doc.txt",
+			documentName: "doc.txt",
 			nodesCreated: 5,
 			relationshipsCreated: 3,
 		});

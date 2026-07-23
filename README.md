@@ -21,8 +21,8 @@ either as a normal pipeline step or as a tool an AI Agent can call autonomously.
 - [Installation](#installation)
 - [Credentials](#credentials)
 - [Usage](#usage)
-  - [Pipeline node — FalkorDB Graph RAG](#pipeline-node--falkordb-graph-rag)
-  - [AI Agent tool — FalkorDB Graph RAG Tool](#ai-agent-tool--falkordb-graph-rag-tool)
+  - [Pipeline node — FalkorDB GraphRAG](#pipeline-node--falkordb-graphrag)
+  - [AI Agent tool — FalkorDB GraphRAG Tool](#ai-agent-tool--falkordb-graphrag-tool)
   - [Operations reference](#operations-reference)
   - [Advanced ingest options](#advanced-ingest-options)
   - [Example workflows](#example-workflows)
@@ -66,7 +66,7 @@ GraphRAG-Server handles ingestion, entity extraction, embedding, and retrieval.
 ## How it works
 
 ```text
- n8n workflow ──▶ FalkorDB Graph RAG node ──HTTP──▶ GraphRAG-Server ──▶ FalkorDB
+ n8n workflow ──▶ FalkorDB GraphRAG node ──HTTP──▶ GraphRAG-Server ──▶ FalkorDB
    (you)            (this package)                    (you run it)       (graph DB)
 ```
 
@@ -89,7 +89,7 @@ returns the structured JSON response as n8n item data.
 
 1. Open n8n, go to **Settings → Community Nodes → Install**.
 2. Enter the package name `n8n-nodes-falkordb-graphrag` and confirm.
-3. After installation the **FalkorDB Graph RAG** and **FalkorDB Graph RAG Tool**
+3. After installation the **FalkorDB GraphRAG** and **FalkorDB GraphRAG Tool**
    nodes appear in the node panel under the _FalkorDB_ category.
 
 ### Manually (self-hosted)
@@ -118,9 +118,9 @@ does not require authentication.
 
 ## Usage
 
-### Pipeline node — FalkorDB Graph RAG
+### Pipeline node — FalkorDB GraphRAG
 
-The **FalkorDB Graph RAG** node fits into any regular workflow. It receives items
+The **FalkorDB GraphRAG** node fits into any regular workflow. It receives items
 on its `main` input, executes the chosen operation for each item, and passes results
 to the `main` output. Use it to ingest documents as part of a data pipeline, run
 scheduled question-answering jobs, or check the ingestion queue.
@@ -147,18 +147,18 @@ See [`workflows/04_action_ask_question.json`](workflows/04_action_ask_question.j
 and [`workflows/10_action_retrieve_only_chat_model.json`](workflows/10_action_retrieve_only_chat_model.json).
 
 ```
-[Trigger] ──▶ [FalkorDB Graph RAG] ──▶ [Send Email / Slack / …]
+[Trigger] ──▶ [FalkorDB GraphRAG] ──▶ [Send Email / Slack / …]
 ```
 
-### AI Agent tool — FalkorDB Graph RAG Tool
+### AI Agent tool — FalkorDB GraphRAG Tool
 
-The **FalkorDB Graph RAG Tool** node connects to an **AI Agent** node's `ai_tool`
+The **FalkorDB GraphRAG Tool** node connects to an **AI Agent** node's `ai_tool`
 input. The agent decides when to call it, and its parameters are pre-filled with
 `$fromAI()` expressions so the LLM fills them from the conversation automatically.
 No manual wiring of input data is needed.
 
 ```
-[Chat Trigger] ──▶ [AI Agent] ──ai_tool──▶ [FalkorDB Graph RAG Tool]
+[Chat Trigger] ──▶ [AI Agent] ──ai_tool──▶ [FalkorDB GraphRAG Tool]
                       │
                       └──ai_language_model──▶ [OpenAI / Anthropic / …]
 ```
@@ -190,11 +190,11 @@ extraction, and graph insertion.
 | Parameter | Description | Default |
 | --- | --- | --- |
 | **Document Text** | The text content to ingest. Supports plain text and Markdown. | — |
-| **Filename** | Filename hint for the server — use `.txt` for plain text, `.md` for Markdown. | `document.txt` |
+| **Document Name** | Document name hint for the server — use `.txt` for plain text, `.md` for Markdown. | `document.txt` |
 | **Graph Name** | Named graph to ingest into. | _(blank)_ |
 | **Advanced Options** | Reveal chunking and extraction controls (see below). | off |
 
-**Output** — `{ filename, status, nodesCreated, relationshipsCreated, chunksIndexed }`
+**Output** — `{ documentName, status, nodesCreated, relationshipsCreated, chunksIndexed }`
 
 #### Ingest GitHub Repo
 

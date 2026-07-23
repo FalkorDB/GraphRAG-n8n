@@ -32,7 +32,7 @@ function makeContext(params: Record<string, unknown>): IExecuteFunctions {
 			apiToken: "token",
 			requestTimeoutSeconds: 60,
 		})),
-		getNode: vi.fn(() => ({ name: "FalkorDB Graph RAG Tool" })),
+		getNode: vi.fn(() => ({ name: "FalkorDB GraphRAG Tool" })),
 		continueOnFail: vi.fn(() => false),
 		helpers: {},
 	} as unknown as IExecuteFunctions;

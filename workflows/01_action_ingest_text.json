@@ -20,7 +20,7 @@
         "graphName": "knowledge-graph"
       },
       "id": "rag-node",
-      "name": "FalkorDB Graph RAG",
+      "name": "FalkorDB GraphRAG",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
       "position": [
@@ -39,7 +39,7 @@
       "main": [
         [
           {
-            "node": "FalkorDB Graph RAG",
+            "node": "FalkorDB GraphRAG",
             "type": "main",
             "index": 0
           }
@@ -51,6 +51,6 @@
     "executionOrder": "v1"
   },
   "meta": {
-    "description": "GraphRagAction pipeline node — Ingest Text operation. Edit the Document Text and Filename fields."
+    "description": "GraphRagAction pipeline node — Ingest Text operation. Edit the Document Text and Document Name field."
   }
 }
