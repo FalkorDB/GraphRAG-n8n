@@ -363,13 +363,14 @@ export class GraphRagAction implements INodeType {
 						i,
 						"document.txt",
 					) as string;
-					let legacyFilename = "";
+					// Backward compatibility for existing workflows saved with the old parameter key.
+					let legacyDocumentName = "";
 					try {
-						legacyFilename = this.getNodeParameter("filename", i, "") as string;
+						legacyDocumentName = this.getNodeParameter("filename", i, "") as string;
 					} catch {
-						legacyFilename = "";
+						legacyDocumentName = "";
 					}
-					const documentName = legacyFilename || configuredDocumentName;
+					const documentName = legacyDocumentName || configuredDocumentName;
 					const source = this.getNodeParameter("ingestSource", i, "text") as "text" | "binary";
 					const opts = getIngestOpts(i);
 					const result =

@@ -198,16 +198,16 @@ export class GraphRagClient {
 
 	/**
 	 * Ingest a text string as a named file.
-	 * filename extension controls server parsing: .txt / .md = plain text, .pdf = PDF extraction.
+	 * document name extension controls server parsing: .txt / .md = plain text, .pdf = PDF extraction.
 	 */
 	async ingest(
 		text: string,
-		filename = "document.txt",
+		documentName = "document.txt",
 		opts: IngestOptions = {},
 	): Promise<IngestResult> {
 		const form = new FormData();
-		const ext = filename.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
-		form.append("file", new Blob([text], { type: ext }), filename);
+		const ext = documentName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
+		form.append("file", new Blob([text], { type: ext }), documentName);
 		if (this.graphName) form.append("graph_name", this.graphName);
 		if (opts.chunkingStrategy) form.append("chunking_strategy", opts.chunkingStrategy);
 		if (opts.maxTokens !== undefined) form.append("max_tokens", String(opts.maxTokens));
@@ -232,14 +232,14 @@ export class GraphRagClient {
 	/** Ingest raw binary bytes (e.g. a PDF buffer) directly. */
 	async ingestBuffer(
 		buf: Buffer | Uint8Array,
-		filename: string,
+		documentName: string,
 		opts: IngestOptions = {},
 	): Promise<IngestResult> {
-		const ext = filename.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
+		const ext = documentName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
 		const form = new FormData();
 		// Normalize to a fresh ArrayBuffer-backed Uint8Array so it is a valid BlobPart
 		// under the stricter typing (which excludes SharedArrayBuffer-backed views).
-		form.append("file", new Blob([Uint8Array.from(buf)], { type: ext }), filename);
+		form.append("file", new Blob([Uint8Array.from(buf)], { type: ext }), documentName);
 		if (this.graphName) form.append("graph_name", this.graphName);
 		if (opts.chunkingStrategy) form.append("chunking_strategy", opts.chunkingStrategy);
 		if (opts.maxTokens !== undefined) form.append("max_tokens", String(opts.maxTokens));

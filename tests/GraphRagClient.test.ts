@@ -186,7 +186,7 @@ describe("GraphRagClient.ingest", () => {
 		);
 	});
 
-	it("defaults filename to document.txt", async () => {
+	it("defaults documentName to document.txt", async () => {
 		mockFetch.mockResolvedValueOnce(okText(sseComplete()));
 		await client.ingest("text");
 		const [, init] = mockFetch.mock.calls[0];
