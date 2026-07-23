@@ -243,7 +243,7 @@ export class GraphRag implements INodeType {
 			},
 			{
 				displayName: "Document Name",
-				name: "filename",
+				name: "documentName",
 				type: "string",
 				default: "document.txt",
 				description:
@@ -342,7 +342,18 @@ export class GraphRag implements INodeType {
 						pairedItem: { item: i },
 					});
 				} else if (operation === "ingest") {
-					const filename = this.getNodeParameter("filename", i) as string;
+					const configuredDocumentName = this.getNodeParameter(
+						"documentName",
+						i,
+						"document.txt",
+					) as string;
+					let legacyFilename = "";
+					try {
+						legacyFilename = this.getNodeParameter("filename", i, "") as string;
+					} catch {
+						legacyFilename = "";
+					}
+					const documentName = legacyFilename || configuredDocumentName;
 					const source = this.getNodeParameter("ingestSource", i, "text") as "text" | "binary";
 					const opts = getIngestOpts(i);
 					const result =
@@ -352,16 +363,16 @@ export class GraphRag implements INodeType {
 										i,
 										this.getNodeParameter("binaryPropertyName", i, "data") as string,
 									),
-									filename,
+									documentName,
 									opts,
 								)
 							: await client.ingest(
 									this.getNodeParameter("documentText", i) as string,
-									filename,
+									documentName,
 									opts,
 								);
 					returnData.push({
-						json: { documentName: filename, ...result },
+						json: { documentName, ...result },
 						pairedItem: { item: i },
 					});
 				} else if (operation === "ingestGithub") {

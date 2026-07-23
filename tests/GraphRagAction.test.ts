@@ -116,11 +116,11 @@ describe("GraphRagAction — ingest operation", () => {
 		}),
 	);
 
-	it("calls client.ingest with text, filename and empty opts when advanced hidden", async () => {
+	it("calls client.ingest with text, documentName and empty opts when advanced hidden", async () => {
 		await run({
 			operation: "ingest",
 			documentText: "hello world",
-			filename: "doc.txt",
+			documentName: "doc.txt",
 			showAdvanced: false,
 		});
 		expect(mockIngest).toHaveBeenCalledWith("hello world", "doc.txt", {});
@@ -132,7 +132,7 @@ describe("GraphRagAction — ingest operation", () => {
 			operation: "ingest",
 			ingestSource: "binary",
 			binaryPropertyName: "file",
-			filename: "report.pdf",
+			documentName: "report.pdf",
 			showAdvanced: false,
 		});
 		(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer = vi
@@ -149,7 +149,7 @@ describe("GraphRagAction — ingest operation", () => {
 		await run({
 			operation: "ingest",
 			documentText: "text",
-			filename: "doc.txt",
+			documentName: "doc.txt",
 			showAdvanced: true,
 			chunkingStrategy: "fixed_size",
 			chunkSize: 500,
@@ -176,7 +176,7 @@ describe("GraphRagAction — ingest operation", () => {
 		const [[result]] = await run({
 			operation: "ingest",
 			documentText: "text",
-			filename: "doc.txt",
+			documentName: "doc.txt",
 			showAdvanced: false,
 		});
 		expect(result.json).toMatchObject({
@@ -184,6 +184,16 @@ describe("GraphRagAction — ingest operation", () => {
 			nodesCreated: 5,
 			relationshipsCreated: 3,
 		});
+	});
+
+	it("supports legacy filename parameter as fallback", async () => {
+		await run({
+			operation: "ingest",
+			documentText: "text",
+			filename: "legacy.txt",
+			showAdvanced: false,
+		});
+		expect(mockIngest).toHaveBeenCalledWith("text", "legacy.txt", {});
 	});
 });
 

@@ -137,7 +137,7 @@ describe("GraphRag — ingest operation", () => {
 		const [[result]] = await run({
 			operation: "ingest",
 			documentText: "some text",
-			filename: "doc.txt",
+			documentName: "doc.txt",
 			showAdvanced: false,
 		});
 		expect(mockIngest).toHaveBeenCalledWith("some text", "doc.txt", {});
@@ -150,7 +150,7 @@ describe("GraphRag — ingest operation", () => {
 			operation: "ingest",
 			ingestSource: "binary",
 			binaryPropertyName: "file",
-			filename: "report.pdf",
+			documentName: "report.pdf",
 			showAdvanced: false,
 		});
 		(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer = vi
@@ -161,6 +161,16 @@ describe("GraphRag — ingest operation", () => {
 			(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer,
 		).toHaveBeenCalledWith(0, "file");
 		expect(mockIngestBuffer).toHaveBeenCalledWith(expect.any(Uint8Array), "report.pdf", {});
+	});
+
+	it("supports legacy filename parameter as fallback", async () => {
+		await run({
+			operation: "ingest",
+			documentText: "some text",
+			filename: "legacy.txt",
+			showAdvanced: false,
+		});
+		expect(mockIngest).toHaveBeenCalledWith("some text", "legacy.txt", {});
 	});
 });
 
@@ -206,7 +216,7 @@ describe("GraphRag — error handling", () => {
 		const ctx = makeContext({
 			operation: "ingest",
 			documentText: "text",
-			filename: "doc.txt",
+			documentName: "doc.txt",
 			showAdvanced: false,
 		});
 		(ctx.continueOnFail as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
