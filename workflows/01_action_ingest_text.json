@@ -16,10 +16,11 @@
       "parameters": {
         "operation": "ingest",
         "documentText": "Acme Corporation is headquartered in San Francisco and was founded by John Smith in 2010. The company develops cloud infrastructure software used by over 500 enterprise clients worldwide. Jane Doe serves as the Chief Technology Officer and leads a team of 200 engineers. Acme's flagship product, CloudCore, integrates with Amazon Web Services and Microsoft Azure. In 2023, Acme acquired DataBridge Inc., a startup based in Austin, Texas, for $120 million. DataBridge was co-founded by Robert Lee and specializes in real-time data pipeline orchestration. CloudCore relies on PostgreSQL for metadata storage and Redis for caching. The engineering team uses GitHub for version control and deploys via Kubernetes on AWS EKS.",
-        "filename": "acme_overview.txt"
+        "documentName": "acme_overview.txt",
+        "graphName": "knowledge-graph"
       },
       "id": "rag-node",
-      "name": "FalkorDB Graph RAG",
+      "name": "FalkorDB GraphRAG",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
       "position": [
@@ -28,7 +29,6 @@
       ],
       "credentials": {
         "falkorDbGraphRagApi": {
-          "id": "wifeKejSOW367A54",
           "name": "FalkorDB GraphRAG Server account"
         }
       }
@@ -39,7 +39,7 @@
       "main": [
         [
           {
-            "node": "FalkorDB Graph RAG",
+            "node": "FalkorDB GraphRAG",
             "type": "main",
             "index": 0
           }
@@ -51,6 +51,6 @@
     "executionOrder": "v1"
   },
   "meta": {
-    "description": "GraphRagAction pipeline node — Ingest Text operation. Edit the Document Text and Filename fields."
+    "description": "GraphRagAction pipeline node — Ingest Text operation. Edit the Document Text and Document Name field."
   }
 }

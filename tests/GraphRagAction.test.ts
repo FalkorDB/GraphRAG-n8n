@@ -1,18 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { IExecuteFunctions } from "n8n-workflow";
 
-const { mockQuestion, mockIngest, mockIngestGithub, mockListDocuments } = vi.hoisted(() => ({
-	mockQuestion: vi.fn(),
-	mockIngest: vi.fn(),
-	mockIngestGithub: vi.fn(),
-	mockListDocuments: vi.fn(),
-}));
+const { mockQuestion, mockIngest, mockIngestBuffer, mockIngestGithub, mockListDocuments } =
+	vi.hoisted(() => ({
+		mockQuestion: vi.fn(),
+		mockIngest: vi.fn(),
+		mockIngestBuffer: vi.fn(),
+		mockIngestGithub: vi.fn(),
+		mockListDocuments: vi.fn(),
+	}));
 
 vi.mock("../src/GraphRagClient", () => ({
 	GraphRagClient: vi.fn(function () {
 		return {
 			question: mockQuestion,
 			ingest: mockIngest,
+			ingestBuffer: mockIngestBuffer,
 			ingestGithub: mockIngestGithub,
 			listDocuments: mockListDocuments,
 		};
@@ -27,13 +30,16 @@ function makeContext(
 ): IExecuteFunctions {
 	return {
 		getInputData: vi.fn(() => [{ json: {} }]),
-		getNodeParameter: vi.fn((name: string) => params[name] ?? undefined),
+		getNodeParameter: vi.fn(
+			(name: string, _itemIndex: number, fallback?: unknown) => params[name] ?? fallback,
+		),
 		getCredentials: vi.fn(async () => ({
 			serverUrl: "http://localhost:8000",
-			bearerToken: "token",
+			apiToken: "token",
+			requestTimeoutSeconds: 60,
 			...credentialOverrides,
 		})),
-		getNode: vi.fn(() => ({ name: "FalkorDB Graph RAG" })),
+		getNode: vi.fn(() => ({ name: "FalkorDB GraphRAG" })),
 		continueOnFail: vi.fn(() => false),
 		helpers: {},
 	} as unknown as IExecuteFunctions;
@@ -54,12 +60,18 @@ describe("GraphRagAction — question operation", () => {
 			questionText: "What is the answer?",
 			queryStrategy: "auto",
 		});
-		expect(mockQuestion).toHaveBeenCalledWith("What is the answer?", { strategy: undefined });
+		expect(mockQuestion).toHaveBeenCalledWith("What is the answer?", {
+			strategy: "auto",
+			responseMode: "answer",
+		});
 	});
 
 	it("passes non-auto strategy to client", async () => {
 		await run({ operation: "question", questionText: "Q", queryStrategy: "local" });
-		expect(mockQuestion).toHaveBeenCalledWith("Q", { strategy: "local" });
+		expect(mockQuestion).toHaveBeenCalledWith("Q", {
+			strategy: "local",
+			responseMode: "answer",
+		});
 	});
 
 	it("returns answer in output json", async () => {
@@ -69,6 +81,28 @@ describe("GraphRagAction — question operation", () => {
 			queryStrategy: "auto",
 		});
 		expect(result.json).toMatchObject({ question: "Q", answer: "The answer is 42." });
+	});
+
+	it("supports retrieve-only mode", async () => {
+		mockQuestion.mockResolvedValueOnce({
+			documents: [{ source_doc: "doc-1", content: "context" }],
+			count: 1,
+		});
+		const [[result]] = await run({
+			operation: "question",
+			questionText: "Q",
+			queryStrategy: "auto",
+			responseMode: "retrieveOnly",
+		});
+		expect(mockQuestion).toHaveBeenCalledWith("Q", {
+			strategy: "auto",
+			responseMode: "retrieve_only",
+		});
+		expect(result.json).toMatchObject({
+			question: "Q",
+			documents: [{ source_doc: "doc-1" }],
+			count: 1,
+		});
 	});
 });
 
@@ -82,21 +116,40 @@ describe("GraphRagAction — ingest operation", () => {
 		}),
 	);
 
-	it("calls client.ingest with text, filename and empty opts when advanced hidden", async () => {
+	it("calls client.ingest with text, documentName and empty opts when advanced hidden", async () => {
 		await run({
 			operation: "ingest",
 			documentText: "hello world",
-			filename: "doc.txt",
+			documentName: "doc.txt",
 			showAdvanced: false,
 		});
 		expect(mockIngest).toHaveBeenCalledWith("hello world", "doc.txt", {});
+	});
+
+	it("reads binary input when ingest source is binary", async () => {
+		const node = new GraphRagAction();
+		const ctx = makeContext({
+			operation: "ingest",
+			ingestSource: "binary",
+			binaryPropertyName: "file",
+			documentName: "report.pdf",
+			showAdvanced: false,
+		});
+		(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer = vi
+			.fn()
+			.mockResolvedValue(Buffer.from("pdf"));
+		await node.execute.call(ctx as unknown as IExecuteFunctions);
+		expect(
+			(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer,
+		).toHaveBeenCalledWith(0, "file");
+		expect(mockIngestBuffer).toHaveBeenCalledWith(expect.any(Uint8Array), "report.pdf", {});
 	});
 
 	it("passes advanced options when showAdvanced is true", async () => {
 		await run({
 			operation: "ingest",
 			documentText: "text",
-			filename: "doc.txt",
+			documentName: "doc.txt",
 			showAdvanced: true,
 			chunkingStrategy: "fixed_size",
 			chunkSize: 500,
@@ -123,14 +176,24 @@ describe("GraphRagAction — ingest operation", () => {
 		const [[result]] = await run({
 			operation: "ingest",
 			documentText: "text",
-			filename: "doc.txt",
+			documentName: "doc.txt",
 			showAdvanced: false,
 		});
 		expect(result.json).toMatchObject({
-			filename: "doc.txt",
+			documentName: "doc.txt",
 			nodesCreated: 5,
 			relationshipsCreated: 3,
 		});
+	});
+
+	it("supports legacy filename parameter as fallback", async () => {
+		await run({
+			operation: "ingest",
+			documentText: "text",
+			filename: "legacy.txt",
+			showAdvanced: false,
+		});
+		expect(mockIngest).toHaveBeenCalledWith("text", "legacy.txt", {});
 	});
 });
 

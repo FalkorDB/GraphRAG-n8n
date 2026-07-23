@@ -28,7 +28,7 @@
     {
       "parameters": {
         "options": {
-          "systemMessage": "You are a knowledge graph ingestion assistant. When given text, use the FalkorDB Graph RAG tool to ingest it into the knowledge graph."
+          "systemMessage": "You are a knowledge graph ingestion assistant. When given text, use the FalkorDB GraphRAG tool to ingest it into the knowledge graph."
         }
       },
       "id": "ai-agent",
@@ -59,7 +59,6 @@
       ],
       "credentials": {
         "openAiApi": {
-          "id": "uFLqPaGqhddJZ4y4",
           "name": "OpenAI account"
         }
       }
@@ -68,10 +67,11 @@
       "parameters": {
         "operation": "ingest",
         "documentText": "Acme Corporation is headquartered in San Francisco and was founded by John Smith in 2010. The company develops cloud infrastructure software used by over 500 enterprise clients worldwide. Jane Doe serves as the Chief Technology Officer and leads a team of 200 engineers. Acme's flagship product, CloudCore, integrates with Amazon Web Services and Microsoft Azure. In 2023, Acme acquired DataBridge Inc., a startup based in Austin, Texas, for $120 million. DataBridge was co-founded by Robert Lee and specializes in real-time data pipeline orchestration. CloudCore relies on PostgreSQL for metadata storage and Redis for caching. The engineering team uses GitHub for version control and deploys via Kubernetes on AWS EKS.",
-        "filename": "acme_overview.txt"
+        "documentName": "acme_overview.txt",
+        "graphName": "knowledge-graph"
       },
       "id": "rag-tool",
-      "name": "FalkorDB Graph RAG Tool",
+      "name": "FalkorDB GraphRAG Tool",
       "type": "n8n-nodes-falkordb-graphrag.graphRag",
       "typeVersion": 1,
       "position": [
@@ -80,7 +80,6 @@
       ],
       "credentials": {
         "falkorDbGraphRagApi": {
-          "id": "wifeKejSOW367A54",
           "name": "FalkorDB GraphRAG Server account"
         }
       }
@@ -120,7 +119,7 @@
         ]
       ]
     },
-    "FalkorDB Graph RAG Tool": {
+    "FalkorDB GraphRAG Tool": {
       "ai_tool": [
         [
           {

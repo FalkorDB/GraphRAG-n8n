@@ -1,0 +1,165 @@
+{
+  "name": "10 — Retrieve Only → Chat Model Answer",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { question: \"What are the main components in the graph?\" } }];"
+      },
+      "id": "set-question",
+      "name": "Set Question",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "question",
+        "questionText": "={{ $json.question }}",
+        "responseMode": "retrieveOnly",
+        "queryStrategy": "auto",
+        "graphName": "knowledge-graph"
+      },
+      "id": "rag-retrieve-only",
+      "name": "FalkorDB Retrieve Only",
+      "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "credentials": {
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const question = $json.question;\nconst docs = $json.documents ?? [];\nconst context = JSON.stringify(docs, null, 2);\nreturn [{ json: { chatInput: `Use only this retrieved context to answer the question. If the context is insufficient, say so.\\n\\nQuestion: ${question}\\n\\nContext:\\n${context}` } }];"
+      },
+      "id": "build-prompt",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a grounded assistant. Answer only from the provided retrieved context."
+        }
+      },
+      "id": "ai-agent",
+      "name": "Generate Final Answer",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1110,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o"
+        },
+        "options": {}
+      },
+      "id": "openai-model",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1110,
+        520
+      ],
+      "credentials": {
+        "openAiApi": {
+          "name": "OpenAI account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Question": {
+      "main": [
+        [
+          {
+            "node": "FalkorDB Retrieve Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FalkorDB Retrieve Only": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate Final Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Final Answer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "Retriever/generator split example: FalkorDB retrieves context in Retrieve only mode, then a user-selected chat model generates the final answer."
+  }
+}

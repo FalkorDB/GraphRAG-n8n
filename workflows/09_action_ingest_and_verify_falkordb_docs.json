@@ -7,9 +7,11 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [100, 300]
+      "position": [
+        100,
+        300
+      ]
     },
-
     {
       "parameters": {
         "graphName": "falkordb_docs",
@@ -21,12 +23,16 @@
       "name": "Ingest FalkorDB Docs",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [340, 300],
+      "position": [
+        340,
+        300
+      ],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
       }
     },
-
     {
       "parameters": {
         "graphName": "falkordb_docs",
@@ -38,12 +44,16 @@
       "name": "Simple Q1: What is FalkorDB?",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [580, 100],
+      "position": [
+        580,
+        100
+      ],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
       }
     },
-
     {
       "parameters": {
         "graphName": "falkordb_docs",
@@ -55,12 +65,16 @@
       "name": "Simple Q2: Query Language",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [580, 300],
+      "position": [
+        580,
+        300
+      ],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
       }
     },
-
     {
       "parameters": {
         "graphName": "falkordb_docs",
@@ -72,12 +86,16 @@
       "name": "Simple Q3: Docker Install",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [580, 500],
+      "position": [
+        580,
+        500
+      ],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
       }
     },
-
     {
       "parameters": {
         "graphName": "falkordb_docs",
@@ -89,12 +107,16 @@
       "name": "Medium Q1: Supported Data Types",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [820, 100],
+      "position": [
+        820,
+        100
+      ],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
       }
     },
-
     {
       "parameters": {
         "graphName": "falkordb_docs",
@@ -106,12 +128,16 @@
       "name": "Medium Q2: Index Types",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [820, 300],
+      "position": [
+        820,
+        300
+      ],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
       }
     },
-
     {
       "parameters": {
         "graphName": "falkordb_docs",
@@ -123,12 +149,16 @@
       "name": "Medium Q3: Replication & HA",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [820, 500],
+      "position": [
+        820,
+        500
+      ],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
       }
     },
-
     {
       "parameters": {
         "graphName": "falkordb_docs",
@@ -140,12 +170,16 @@
       "name": "Complex Q1: Sparse Matrix Storage",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [1060, 100],
+      "position": [
+        1060,
+        100
+      ],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
       }
     },
-
     {
       "parameters": {
         "graphName": "falkordb_docs",
@@ -157,12 +191,16 @@
       "name": "Complex Q2: Full-Text & Vector Search",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [1060, 300],
+      "position": [
+        1060,
+        300
+      ],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
       }
     },
-
     {
       "parameters": {
         "graphName": "falkordb_docs",
@@ -174,33 +212,84 @@
       "name": "Complex Q3: Concurrency Architecture",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [1060, 500],
+      "position": [
+        1060,
+        500
+      ],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
       }
     }
   ],
   "connections": {
     "Manual Trigger": {
-      "main": [[{ "node": "Ingest FalkorDB Docs", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Ingest FalkorDB Docs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Ingest FalkorDB Docs": {
       "main": [
         [
-          { "node": "Simple Q1: What is FalkorDB?",        "type": "main", "index": 0 },
-          { "node": "Simple Q2: Query Language",            "type": "main", "index": 0 },
-          { "node": "Simple Q3: Docker Install",            "type": "main", "index": 0 },
-          { "node": "Medium Q1: Supported Data Types",      "type": "main", "index": 0 },
-          { "node": "Medium Q2: Index Types",               "type": "main", "index": 0 },
-          { "node": "Medium Q3: Replication & HA",          "type": "main", "index": 0 },
-          { "node": "Complex Q1: Sparse Matrix Storage",    "type": "main", "index": 0 },
-          { "node": "Complex Q2: Full-Text & Vector Search","type": "main", "index": 0 },
-          { "node": "Complex Q3: Concurrency Architecture", "type": "main", "index": 0 }
+          {
+            "node": "Simple Q1: What is FalkorDB?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Simple Q2: Query Language",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Simple Q3: Docker Install",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Medium Q1: Supported Data Types",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Medium Q2: Index Types",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Medium Q3: Replication & HA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Complex Q1: Sparse Matrix Storage",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Complex Q2: Full-Text & Vector Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Complex Q3: Concurrency Architecture",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     }
   },
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1"
+  },
   "meta": {
     "description": "Ingests the FalkorDB/docs GitHub repository into the 'falkordb_docs' graph, then fans out to 9 verification questions — 3 simple (local), 3 medium (auto), and 3 complex (multi_path) — all running in parallel after ingestion completes."
   }

@@ -7,25 +7,48 @@
       "name": "Manual Trigger",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
-        "operation": "listDocuments"
+        "operation": "listDocuments",
+        "graphName": "knowledge-graph"
       },
       "id": "rag-node",
-      "name": "FalkorDB Graph RAG",
+      "name": "FalkorDB GraphRAG",
       "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
       "typeVersion": 1,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "credentials": {
-        "falkorDbGraphRagApi": { "id": "wifeKejSOW367A54", "name": "FalkorDB GraphRAG Server account" }
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
       }
     }
   ],
   "connections": {
-    "Manual Trigger": { "main": [[{ "node": "FalkorDB Graph RAG", "type": "main", "index": 0 }]] }
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "FalkorDB GraphRAG",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1" },
-  "meta": { "description": "GraphRagAction pipeline node — List Documents operation. Click Test Workflow." }
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "GraphRagAction pipeline node — List Documents operation. Click Test Workflow."
+  }
 }

@@ -48,10 +48,10 @@ describe("GraphRagClient constructor", () => {
 		expect(mockFetch).toHaveBeenCalledWith("http://localhost:8000/api/query", expect.any(Object));
 	});
 
-	it("includes Authorization header when bearerToken provided", async () => {
+	it("includes Authorization header when apiToken provided", async () => {
 		const client = new GraphRagClient({
 			serverUrl: "http://localhost:8000",
-			bearerToken: "mytoken",
+			apiToken: "mytoken",
 		});
 		mockFetch.mockResolvedValueOnce(okJson({ answer: "ok" }));
 		await client.question("test");
@@ -59,7 +59,7 @@ describe("GraphRagClient constructor", () => {
 		expect((init as RequestInit).headers).toMatchObject({ Authorization: "Bearer mytoken" });
 	});
 
-	it("omits Authorization header when no bearerToken", async () => {
+	it("omits Authorization header when no apiToken", async () => {
 		const client = new GraphRagClient({ serverUrl: "http://localhost:8000" });
 		mockFetch.mockResolvedValueOnce(okJson({ answer: "ok" }));
 		await client.question("test");
@@ -83,6 +83,9 @@ describe("GraphRagClient.question", () => {
 			"http://localhost:8000/api/query",
 			expect.objectContaining({ method: "POST" }),
 		);
+		const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
+		expect(body.return_context).toBe(false);
+		expect(body.retrieve_only).toBe(false);
 	});
 
 	it("sends strategy when provided", async () => {
@@ -112,10 +115,54 @@ describe("GraphRagClient.question", () => {
 		await expect(client.question("Q")).rejects.toThrow("Query failed (HTTP 500)");
 	});
 
+	it("surfaces server detail verbatim when provided", async () => {
+		mockFetch.mockResolvedValueOnce(
+			errorResponse(
+				403,
+				JSON.stringify({
+					detail: "Graph 'x' runs on the deployment's LLM key and isn't available via the API.",
+				}),
+			),
+		);
+		await expect(client.question("Q")).rejects.toThrow(
+			"Graph 'x' runs on the deployment's LLM key and isn't available via the API.",
+		);
+	});
+
+	it("throws timeout error when request aborts", async () => {
+		const abortError = Object.assign(new Error("aborted"), { name: "AbortError" });
+		mockFetch.mockRejectedValueOnce(abortError);
+		await expect(client.question("Q")).rejects.toThrow("Request timed out after 60 seconds");
+	});
+
 	it("returns empty string answer when field missing", async () => {
 		mockFetch.mockResolvedValueOnce(okJson({}));
 		const result = await client.question("Q");
 		expect(result.answer).toBe("");
+	});
+
+	it("supports retrieve-only mode", async () => {
+		mockFetch.mockResolvedValueOnce(
+			okJson({
+				context: {
+					source_chunks: [{ source_doc: "doc-1", text: "retrieved chunk" }],
+				},
+			}),
+		);
+		const result = await client.question("Q", { responseMode: "retrieve_only" });
+		const body = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
+		expect(body.return_context).toBe(true);
+		expect(body.retrieve_only).toBe(true);
+		expect(result).toEqual({
+			documents: [{ source_doc: "doc-1", text: "retrieved chunk" }],
+			count: 1,
+		});
+	});
+
+	it("uses documents array directly in retrieve-only mode", async () => {
+		mockFetch.mockResolvedValueOnce(okJson({ documents: [{ id: "a" }, { id: "b" }] }));
+		const result = await client.question("Q", { responseMode: "retrieve_only" });
+		expect(result).toEqual({ documents: [{ id: "a" }, { id: "b" }], count: 2 });
 	});
 });
 
@@ -139,7 +186,7 @@ describe("GraphRagClient.ingest", () => {
 		);
 	});
 
-	it("defaults filename to document.txt", async () => {
+	it("defaults documentName to document.txt", async () => {
 		mockFetch.mockResolvedValueOnce(okText(sseComplete()));
 		await client.ingest("text");
 		const [, init] = mockFetch.mock.calls[0];
@@ -160,7 +207,7 @@ describe("GraphRagClient.ingest", () => {
 
 	it("throws on non-ok response", async () => {
 		mockFetch.mockResolvedValueOnce(errorResponse(422, "bad request"));
-		await expect(client.ingest("text")).rejects.toThrow("Ingest failed (HTTP 422)");
+		await expect(client.ingest("text")).rejects.toThrow("Ingest failed (HTTP 422).");
 	});
 
 	it("appends chunking options to form", async () => {
@@ -184,6 +231,13 @@ describe("GraphRagClient.ingest", () => {
 		await client.ingest("text", "doc.txt", { entityTypes: "PERSON,ORG" });
 		const form = (mockFetch.mock.calls[0][1] as RequestInit).body as FormData;
 		expect(form.get("entity_types")).toBe("PERSON,ORG");
+	});
+
+	it("appends skip_finalize when requested", async () => {
+		mockFetch.mockResolvedValueOnce(okText(sseComplete()));
+		await client.ingest("text", "doc.txt", { skipFinalize: true });
+		const form = (mockFetch.mock.calls[0][1] as RequestInit).body as FormData;
+		expect(form.get("skip_finalize")).toBe("true");
 	});
 });
 
@@ -231,9 +285,7 @@ describe("GraphRagClient.ingestBuffer", () => {
 
 	it("throws on non-ok response", async () => {
 		mockFetch.mockResolvedValueOnce(errorResponse(500, "boom"));
-		await expect(client.ingestBuffer(Buffer.from("x"), "doc.txt")).rejects.toThrow(
-			"Ingest failed (HTTP 500)",
-		);
+		await expect(client.ingestBuffer(Buffer.from("x"), "doc.txt")).rejects.toThrow("Ingest failed");
 	});
 });
 
@@ -271,7 +323,7 @@ describe("GraphRagClient.listDocuments", () => {
 
 	it("throws on non-ok response", async () => {
 		mockFetch.mockResolvedValueOnce(errorResponse(403, "forbidden"));
-		await expect(client.listDocuments()).rejects.toThrow("List documents failed (HTTP 403)");
+		await expect(client.listDocuments()).rejects.toThrow("List documents failed (HTTP 403).");
 	});
 });
 
@@ -296,7 +348,8 @@ describe("GraphRagClient.ingestGithub", () => {
 			.mockResolvedValueOnce(okText("file one content")) // raw.githubusercontent fetch 1
 			.mockResolvedValueOnce(okText(sseComplete(2, 1, 1))) // ingest 1
 			.mockResolvedValueOnce(okText("file two content")) // raw.githubusercontent fetch 2
-			.mockResolvedValueOnce(okText(sseComplete(3, 2, 1))); // ingest 2
+			.mockResolvedValueOnce(okText(sseComplete(3, 2, 1))) // ingest 2
+			.mockResolvedValueOnce(okText('data: {"status":"complete"}')); // finalize
 
 		const result = await client.ingestGithub("https://github.com/FalkorDB/GraphRAG-SDK");
 		expect(result.filesIngested).toBe(2);
@@ -304,6 +357,13 @@ describe("GraphRagClient.ingestGithub", () => {
 		expect(result.totalRelationshipsCreated).toBe(3);
 		expect(result.files).toEqual(["README.md", "docs/index.md"]);
 		expect(result.skippedFiles).toEqual([]);
+		expect(result.finalized).toBe(true);
+
+		const ingest1Form = (mockFetch.mock.calls[2][1] as RequestInit).body as FormData;
+		const ingest2Form = (mockFetch.mock.calls[4][1] as RequestInit).body as FormData;
+		expect(ingest1Form.get("skip_finalize")).toBe("true");
+		expect(ingest2Form.get("skip_finalize")).toBe("true");
+		expect(mockFetch.mock.calls[5][0]).toBe("http://localhost:8000/api/ingest/finalize");
 	});
 
 	it("skips files that fail to fetch", async () => {
@@ -321,11 +381,15 @@ describe("GraphRagClient.ingestGithub", () => {
 			)
 			.mockResolvedValueOnce(okText("content")) // good.md raw
 			.mockResolvedValueOnce(okText(sseComplete(1, 0, 1))) // good.md ingest
-			.mockResolvedValueOnce(errorResponse(404)); // bad.md raw
+			.mockResolvedValueOnce(errorResponse(404)) // bad.md raw
+			.mockResolvedValueOnce(okText('data: {"status":"complete"}')); // finalize
 
 		const result = await client.ingestGithub("https://github.com/org/repo");
 		expect(result.filesIngested).toBe(1);
-		expect(result.skippedFiles).toEqual(["bad.md"]);
+		expect(result.skippedFiles).toEqual([
+			{ path: "bad.md", reason: "Failed to fetch file content (HTTP 404)" },
+		]);
+		expect(result.finalized).toBe(true);
 	});
 
 	it("throws when preview returns no files", async () => {

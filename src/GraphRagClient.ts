@@ -13,16 +13,24 @@
 
 export interface GraphRagConfig {
 	serverUrl: string;
-	bearerToken?: string;
+	apiToken?: string;
+	requestTimeoutSeconds?: number;
 	/** Graph to operate on. When set, appended as ?graph_name=... to every request. */
 	graphName?: string;
 }
 
 // ── Result types ─────────────────────────────────────────────────────────────
 
-export interface QuestionResult {
+export interface QuestionAnswerResult {
 	answer: string;
 }
+
+export interface QuestionRetrieveResult {
+	documents: unknown[];
+	count: number;
+}
+
+export type QuestionResult = QuestionAnswerResult | QuestionRetrieveResult;
 
 export interface IngestResult {
 	status: string;
@@ -37,7 +45,8 @@ export interface IngestGithubResult {
 	totalNodesCreated: number;
 	totalRelationshipsCreated: number;
 	files: string[];
-	skippedFiles: string[];
+	skippedFiles: Array<{ path: string; reason: string }>;
+	finalized: boolean;
 }
 
 // ── Ingest options ────────────────────────────────────────────────────────────
@@ -59,6 +68,8 @@ export interface IngestOptions {
 	resolutionStrategy?: "exact" | "description_merge" | "semantic" | "llm_verified" | "all";
 	/** Comma-separated entity types to restrict extraction to (empty = all) */
 	entityTypes?: string;
+	/** Skip server finalization. Useful when batching many ingests before one finalize call. */
+	skipFinalize?: boolean;
 }
 
 // ── Query options ─────────────────────────────────────────────────────────────
@@ -68,6 +79,8 @@ export interface QueryOptions {
 	strategy?: "auto" | "local" | "multi_path";
 	/** Conversation history: array of {role, content} messages */
 	history?: Array<{ role: string; content: string }>;
+	/** Response mode: answer from server (default) or retrieve context only. */
+	responseMode?: "answer" | "retrieve_only";
 }
 
 // ── Client ────────────────────────────────────────────────────────────────────
@@ -76,11 +89,15 @@ export class GraphRagClient {
 	private readonly base: string;
 	private readonly authHeader: Record<string, string>;
 	private readonly graphName: string;
+	private readonly requestTimeoutMs: number;
 
 	constructor(config: GraphRagConfig) {
 		this.base = config.serverUrl.replace(/\/$/, "");
-		this.authHeader = config.bearerToken ? { Authorization: `Bearer ${config.bearerToken}` } : {};
+		this.authHeader = config.apiToken
+			? { Authorization: ["Bearer", config.apiToken].join(" ") }
+			: {};
 		this.graphName = config.graphName ?? "";
+		this.requestTimeoutMs = Math.max(1, config.requestTimeoutSeconds ?? 60) * 1000;
 	}
 
 	/** Returns "?graph_name=<name>" when a graph name is configured, otherwise "". */
@@ -100,6 +117,51 @@ export class GraphRagClient {
 		return { "X-Requested-With": "XMLHttpRequest", ...this.authHeader };
 	}
 
+	private async fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
+		try {
+			return await fetch(url, { ...init, signal: controller.signal });
+		} catch (error) {
+			if ((error as Error).name === "AbortError") {
+				throw new Error(`Request timed out after ${this.requestTimeoutMs / 1000} seconds`);
+			}
+			throw error;
+		} finally {
+			clearTimeout(timeout);
+		}
+	}
+
+	private async httpError(operationName: string, res: Response): Promise<Error> {
+		const body = await res.text();
+		const detail = this.extractServerDetail(body);
+		if (detail) return new Error(detail);
+		return new Error(this.fallbackErrorMessage(operationName, res.status));
+	}
+
+	private extractServerDetail(body: string): string | undefined {
+		if (!body.trim()) return undefined;
+		try {
+			const parsed = JSON.parse(body) as { detail?: unknown };
+			if (typeof parsed.detail === "string" && parsed.detail.trim()) return parsed.detail;
+		} catch {}
+		return undefined;
+	}
+
+	private fallbackErrorMessage(operationName: string, status: number): string {
+		switch (status) {
+			case 401:
+				return `${operationName} failed (401 Unauthorized). Verify your API token.`;
+			case 404:
+				return `${operationName} failed (404 Not Found). Check server URL and graph name.`;
+			case 429:
+				return `${operationName} failed (429 Too Many Requests). Retry shortly.`;
+			default:
+				if (status >= 500) return `${operationName} failed (HTTP ${status}). Server error.`;
+				return `${operationName} failed (HTTP ${status}).`;
+		}
+	}
+
 	// ── Ask Question ────────────────────────────────────────────────────────────
 
 	/**
@@ -107,36 +169,45 @@ export class GraphRagClient {
 	 * strategy: "auto" (default) | "local" | "multi_path"
 	 */
 	async question(q: string, opts: QueryOptions = {}): Promise<QuestionResult> {
-		const res = await fetch(`${this.base}/api/query${this.qs()}`, {
+		const retrieveOnly = opts.responseMode === "retrieve_only";
+		const res = await this.fetchWithTimeout(`${this.base}/api/query${this.qs()}`, {
 			method: "POST",
 			headers: this.jsonHeaders(),
 			body: JSON.stringify({
 				question: q,
-				return_context: false,
+				return_context: retrieveOnly,
+				retrieve_only: retrieveOnly,
 				history: opts.history ?? [],
 				strategy: opts.strategy ?? null,
 				...(this.graphName ? { graph_name: this.graphName } : {}),
 			}),
 		});
-		if (!res.ok) throw new Error(`Query failed (HTTP ${res.status}): ${await res.text()}`);
-		const data = (await res.json()) as { answer: string };
-		return { answer: data.answer ?? "" };
+		if (!res.ok) throw await this.httpError("Query", res);
+		const data = (await res.json()) as {
+			answer?: string;
+			documents?: unknown[];
+			context?: unknown;
+		};
+		if (!retrieveOnly) return { answer: data.answer ?? "" };
+
+		const documents = this._extractDocumentsFromContext(data);
+		return { documents, count: documents.length };
 	}
 
 	// ── Ingest text / markdown / PDF ─────────────────────────────────────────
 
 	/**
 	 * Ingest a text string as a named file.
-	 * filename extension controls server parsing: .txt / .md = plain text, .pdf = PDF extraction.
+	 * document name extension controls server parsing: .txt / .md = plain text, .pdf = PDF extraction.
 	 */
 	async ingest(
 		text: string,
-		filename = "document.txt",
+		documentName = "document.txt",
 		opts: IngestOptions = {},
 	): Promise<IngestResult> {
 		const form = new FormData();
-		const ext = filename.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
-		form.append("file", new Blob([text], { type: ext }), filename);
+		const ext = documentName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
+		form.append("file", new Blob([text], { type: ext }), documentName);
 		if (this.graphName) form.append("graph_name", this.graphName);
 		if (opts.chunkingStrategy) form.append("chunking_strategy", opts.chunkingStrategy);
 		if (opts.maxTokens !== undefined) form.append("max_tokens", String(opts.maxTokens));
@@ -147,27 +218,28 @@ export class GraphRagClient {
 		if (opts.extractionStrategy) form.append("extraction_strategy", opts.extractionStrategy);
 		if (opts.resolutionStrategy) form.append("resolution_strategy", opts.resolutionStrategy);
 		if (opts.entityTypes) form.append("entity_types", opts.entityTypes);
+		if (opts.skipFinalize) form.append("skip_finalize", "true");
 
-		const res = await fetch(`${this.base}/api/ingest${this.qs()}`, {
+		const res = await this.fetchWithTimeout(`${this.base}/api/ingest${this.qs()}`, {
 			method: "POST",
 			headers: this.multipartHeaders(),
 			body: form,
 		});
-		if (!res.ok) throw new Error(`Ingest failed (HTTP ${res.status}): ${await res.text()}`);
+		if (!res.ok) throw await this.httpError("Ingest", res);
 		return this._parseIngestSSE(await res.text());
 	}
 
 	/** Ingest raw binary bytes (e.g. a PDF buffer) directly. */
 	async ingestBuffer(
 		buf: Buffer | Uint8Array,
-		filename: string,
+		documentName: string,
 		opts: IngestOptions = {},
 	): Promise<IngestResult> {
-		const ext = filename.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
+		const ext = documentName.toLowerCase().endsWith(".pdf") ? "application/pdf" : "text/plain";
 		const form = new FormData();
 		// Normalize to a fresh ArrayBuffer-backed Uint8Array so it is a valid BlobPart
 		// under the stricter typing (which excludes SharedArrayBuffer-backed views).
-		form.append("file", new Blob([Uint8Array.from(buf)], { type: ext }), filename);
+		form.append("file", new Blob([Uint8Array.from(buf)], { type: ext }), documentName);
 		if (this.graphName) form.append("graph_name", this.graphName);
 		if (opts.chunkingStrategy) form.append("chunking_strategy", opts.chunkingStrategy);
 		if (opts.maxTokens !== undefined) form.append("max_tokens", String(opts.maxTokens));
@@ -178,13 +250,14 @@ export class GraphRagClient {
 		if (opts.extractionStrategy) form.append("extraction_strategy", opts.extractionStrategy);
 		if (opts.resolutionStrategy) form.append("resolution_strategy", opts.resolutionStrategy);
 		if (opts.entityTypes) form.append("entity_types", opts.entityTypes);
+		if (opts.skipFinalize) form.append("skip_finalize", "true");
 
-		const res = await fetch(`${this.base}/api/ingest${this.qs()}`, {
+		const res = await this.fetchWithTimeout(`${this.base}/api/ingest${this.qs()}`, {
 			method: "POST",
 			headers: this.multipartHeaders(),
 			body: form,
 		});
-		if (!res.ok) throw new Error(`Ingest failed (HTTP ${res.status}): ${await res.text()}`);
+		if (!res.ok) throw await this.httpError("Ingest", res);
 		return this._parseIngestSSE(await res.text());
 	}
 
@@ -200,16 +273,19 @@ export class GraphRagClient {
 		ref?: string,
 		opts: IngestOptions = {},
 	): Promise<IngestGithubResult> {
-		const previewRes = await fetch(`${this.base}/api/ingest/github/preview${this.qs()}`, {
-			method: "POST",
-			headers: this.jsonHeaders(),
-			body: JSON.stringify({ url: repoUrl, ref: ref || null, ...(this.graphName ? { graph_name: this.graphName } : {}) }),
-		});
-		if (!previewRes.ok) {
-			throw new Error(
-				`GitHub preview failed (HTTP ${previewRes.status}): ${await previewRes.text()}`,
-			);
-		}
+		const previewRes = await this.fetchWithTimeout(
+			`${this.base}/api/ingest/github/preview${this.qs()}`,
+			{
+				method: "POST",
+				headers: this.jsonHeaders(),
+				body: JSON.stringify({
+					url: repoUrl,
+					ref: ref || null,
+					...(this.graphName ? { graph_name: this.graphName } : {}),
+				}),
+			},
+		);
+		if (!previewRes.ok) throw await this.httpError("GitHub preview", previewRes);
 		const preview = (await previewRes.json()) as {
 			owner: string;
 			repo: string;
@@ -223,30 +299,40 @@ export class GraphRagClient {
 		let totalNodes = 0,
 			totalRels = 0;
 		const ingested: string[] = [],
-			skipped: string[] = [];
+			skipped: Array<{ path: string; reason: string }> = [];
 
 		for (const file of preview.files) {
 			const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${gitRef}/${file.path}`;
 			try {
-				const fileRes = await fetch(rawUrl);
+				const fileRes = await this.fetchWithTimeout(rawUrl, { method: "GET" });
 				if (!fileRes.ok) {
-					skipped.push(file.path);
+					skipped.push({
+						path: file.path,
+						reason: `Failed to fetch file content (HTTP ${fileRes.status})`,
+					});
 					continue;
 				}
 				const text = await fileRes.text();
 				if (!text.trim()) {
-					skipped.push(file.path);
+					skipped.push({ path: file.path, reason: "File content is empty" });
 					continue;
 				}
 				const fname = file.path.split("/").pop() ?? file.path;
-				const result = await this.ingest(text, fname, opts);
+				const result = await this.ingest(text, fname, { ...opts, skipFinalize: true });
 				totalNodes += result.nodesCreated;
 				totalRels += result.relationshipsCreated;
 				ingested.push(file.path);
-			} catch {
-				skipped.push(file.path);
+			} catch (error) {
+				skipped.push({ path: file.path, reason: (error as Error).message });
 			}
 		}
+
+		let finalized = false;
+		if (ingested.length > 0) {
+			await this.finalize();
+			finalized = true;
+		}
+
 		return {
 			repoUrl,
 			filesIngested: ingested.length,
@@ -254,6 +340,7 @@ export class GraphRagClient {
 			totalRelationshipsCreated: totalRels,
 			files: ingested,
 			skippedFiles: skipped,
+			finalized,
 		};
 	}
 
@@ -265,12 +352,12 @@ export class GraphRagClient {
 	 * Only needed when you call ingest manually with skipFinalize option.
 	 */
 	async finalize(): Promise<{ status: string }> {
-		const res = await fetch(`${this.base}/api/ingest/finalize${this.qs()}`, {
+		const res = await this.fetchWithTimeout(`${this.base}/api/ingest/finalize${this.qs()}`, {
 			method: "POST",
 			headers: this.jsonHeaders(),
 			body: JSON.stringify(this.graphName ? { graph_name: this.graphName } : {}),
 		});
-		if (!res.ok) throw new Error(`Finalize failed (HTTP ${res.status}): ${await res.text()}`);
+		if (!res.ok) throw await this.httpError("Finalize", res);
 		const raw = await res.text();
 		const last =
 			raw
@@ -297,10 +384,11 @@ export class GraphRagClient {
 			relationCount?: number;
 		}>
 	> {
-		const res = await fetch(`${this.base}/api/documents${this.qs()}`, {
+		const res = await this.fetchWithTimeout(`${this.base}/api/documents${this.qs()}`, {
+			method: "GET",
 			headers: { "X-Requested-With": "XMLHttpRequest", ...this.authHeader },
 		});
-		if (!res.ok) throw new Error(`List documents failed (HTTP ${res.status}): ${await res.text()}`);
+		if (!res.ok) throw await this.httpError("List documents", res);
 		const raw = (await res.json()) as unknown;
 		// Server may return a plain array or { documents: [...] }
 		const arr = Array.isArray(raw) ? raw : ((raw as { documents: unknown[] }).documents ?? []);
@@ -321,6 +409,25 @@ export class GraphRagClient {
 			entityCount: d.entity_count,
 			relationCount: d.relation_count,
 		}));
+	}
+
+	private _extractDocumentsFromContext(data: {
+		documents?: unknown[];
+		context?: unknown;
+	}): unknown[] {
+		if (Array.isArray(data.documents)) return data.documents;
+		if (Array.isArray(data.context)) return data.context;
+		if (!data.context || typeof data.context !== "object") return [];
+
+		const context = data.context as {
+			documents?: unknown[];
+			source_chunks?: unknown[];
+			chunks?: unknown[];
+		};
+		if (Array.isArray(context.documents)) return context.documents;
+		if (Array.isArray(context.source_chunks)) return context.source_chunks;
+		if (Array.isArray(context.chunks)) return context.chunks;
+		return [context];
 	}
 
 	// ── SSE parser ───────────────────────────────────────────────────────────

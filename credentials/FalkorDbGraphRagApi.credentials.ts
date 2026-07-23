@@ -1,4 +1,4 @@
-import { ICredentialType, INodeProperties } from "n8n-workflow";
+import { ICredentialType, ICredentialTestRequest, INodeProperties } from "n8n-workflow";
 
 export class FalkorDbGraphRagApi implements ICredentialType {
 	name = "falkorDbGraphRagApi";
@@ -16,13 +16,40 @@ export class FalkorDbGraphRagApi implements ICredentialType {
 			description: "Base URL of the running GraphRAG-Server instance",
 		},
 		{
-			displayName: "Bearer Token",
-			name: "bearerToken",
+			displayName: "API Token",
+			name: "apiToken",
 			type: "string",
 			typeOptions: { password: true },
 			default: "",
+			placeholder: "e.g. grag_...",
 			description:
-				"Bearer token for authentication (leave blank if auth_disabled=true on the server)",
+				"API token for authentication. Create one from GraphRAG-Server Settings → API Tokens.",
+		},
+		{
+			displayName: "Request Timeout (Seconds)",
+			name: "requestTimeoutSeconds",
+			type: "number",
+			default: 60,
+			required: true,
+			description: "Maximum time to wait for each server request before aborting",
 		},
 	];
+
+	authenticate = {
+		type: "generic" as const,
+		properties: {
+			headers: {
+				Authorization: "={{$credentials.apiToken ? 'Bearer ' + $credentials.apiToken : undefined}}",
+				"X-Requested-With": "XMLHttpRequest",
+			},
+		},
+	};
+
+	test: ICredentialTestRequest = {
+		request: {
+			baseURL: "={{$credentials.serverUrl}}",
+			url: "/api/ingest/quota",
+			method: "GET",
+		},
+	};
 }

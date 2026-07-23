@@ -28,7 +28,7 @@
     {
       "parameters": {
         "options": {
-          "systemMessage": "You are a helpful assistant. Use the FalkorDB Graph RAG tool to answer questions from the knowledge graph."
+          "systemMessage": "You are a helpful assistant. Use the FalkorDB GraphRAG tool to answer questions from the knowledge graph."
         }
       },
       "id": "ai-agent",
@@ -59,7 +59,6 @@
       ],
       "credentials": {
         "openAiApi": {
-          "id": "uFLqPaGqhddJZ4y4",
           "name": "OpenAI account"
         }
       }
@@ -68,10 +67,11 @@
       "parameters": {
         "operation": "question",
         "questionText": "={{ $fromAI(\"question\", \"Natural-language question to ask the knowledge graph\") }}",
-        "queryStrategy": "auto"
+        "queryStrategy": "local",
+        "graphName": "knowledge-graph"
       },
       "id": "rag-tool",
-      "name": "FalkorDB Graph RAG Tool",
+      "name": "FalkorDB GraphRAG Tool",
       "type": "n8n-nodes-falkordb-graphrag.graphRag",
       "typeVersion": 1,
       "position": [
@@ -80,7 +80,6 @@
       ],
       "credentials": {
         "falkorDbGraphRagApi": {
-          "id": "wifeKejSOW367A54",
           "name": "FalkorDB GraphRAG Server account"
         }
       }
@@ -120,7 +119,7 @@
         ]
       ]
     },
-    "FalkorDB Graph RAG Tool": {
+    "FalkorDB GraphRAG Tool": {
       "ai_tool": [
         [
           {

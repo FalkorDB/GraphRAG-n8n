@@ -23,6 +23,7 @@ const ADVANCED_INGEST_FIELDS = [
 		],
 		default: "sentence_token_cap",
 		description: "How the server splits the document into chunks",
+		hint: "Controls how text is split before extraction and indexing.",
 		displayOptions: {
 			show: { operation: ["ingest", "ingestGithub"], showAdvanced: [true] },
 		},
@@ -33,6 +34,7 @@ const ADVANCED_INGEST_FIELDS = [
 		type: "number" as const,
 		default: 256,
 		description: "Maximum tokens per chunk (64–2048). Used with sentence_token_cap.",
+		hint: "Use lower values for more granular chunks; higher values for more context per chunk.",
 		displayOptions: {
 			show: {
 				operation: ["ingest", "ingestGithub"],
@@ -47,6 +49,7 @@ const ADVANCED_INGEST_FIELDS = [
 		type: "number" as const,
 		default: 1,
 		description: "Sentences of overlap between consecutive chunks (0–10)",
+		hint: "Adds sentence overlap between chunks to preserve context continuity.",
 		displayOptions: {
 			show: {
 				operation: ["ingest", "ingestGithub"],
@@ -61,6 +64,7 @@ const ADVANCED_INGEST_FIELDS = [
 		type: "number" as const,
 		default: 1000,
 		description: "Tokens per chunk (100–5000). Used with fixed_size.",
+		hint: "Chunk size to use when Fixed Size chunking is selected.",
 		displayOptions: {
 			show: {
 				operation: ["ingest", "ingestGithub"],
@@ -75,6 +79,7 @@ const ADVANCED_INGEST_FIELDS = [
 		type: "number" as const,
 		default: 100,
 		description: "Overlap tokens between fixed-size chunks (0–500)",
+		hint: "Token overlap between fixed-size chunks to reduce context loss.",
 		displayOptions: {
 			show: {
 				operation: ["ingest", "ingestGithub"],
@@ -96,6 +101,7 @@ const ADVANCED_INGEST_FIELDS = [
 		],
 		default: "exact",
 		description: "How the server resolves duplicate entities across chunks",
+		hint: "Choose how duplicate entities discovered in different chunks are merged.",
 		displayOptions: {
 			show: { operation: ["ingest", "ingestGithub"], showAdvanced: [true] },
 		},
@@ -107,6 +113,7 @@ const ADVANCED_INGEST_FIELDS = [
 		default: "",
 		description:
 			"Comma-separated list of entity types to extract (e.g. Person,Organization). Leave blank to extract all types.",
+		hint: "Optional allow-list for entity classes to extract.",
 		displayOptions: {
 			show: { operation: ["ingest", "ingestGithub"], showAdvanced: [true] },
 		},
@@ -115,29 +122,31 @@ const ADVANCED_INGEST_FIELDS = [
 
 export class GraphRag implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: "FalkorDB Graph RAG Tool",
+		displayName: "FalkorDB GraphRAG Tool",
 		name: "graphRag",
 		icon: "file:falkordb-f.svg",
 		group: ["transform"],
 		version: 1,
 		description:
-			"Query or ingest data in a FalkorDB Graph RAG knowledge graph. " +
-			"Use 'Ask Question' to answer questions from the knowledge graph. " +
+			"Retrieve context from or ingest data into a FalkorDB GraphRAG knowledge graph. " +
+			"Use 'Retrieve Context' to fetch ranked context documents from the graph. " +
 			"Use 'Ingest Text' to add plain text or markdown. " +
-			"Use 'Ingest GitHub Repo' to ingest all markdown files from a GitHub repository URL. " +
-			"Use 'List Documents' to see what has been ingested.",
-		defaults: { name: "FalkorDB Graph RAG Tool" },
+			"Use 'Ingest GitHub Repo' to ingest all markdown files from a GitHub repository URL.",
+		defaults: { name: "FalkorDB GraphRAG Tool" },
 		inputs: [],
 		outputs: ["ai_tool"],
 		credentials: [{ name: "falkorDbGraphRagApi", required: true }],
-		properties: [			// ── Graph Name ───────────────────────────────────────────────────────────────
+		properties: [
+			// ── Graph Name ───────────────────────────────────────────────────────────────
 			{
 				displayName: "Graph Name",
 				name: "graphName",
 				type: "string",
 				default: "",
 				placeholder: "e.g. knowledge_graph",
-				description: "Name of the graph to operate on. Leave blank to use the server default.",
+				description:
+					"Name of the graph to operate on. Leave blank to use your default graph. On hosted FalkorDB GraphRAG, this selects among graphs owned by your API token; on self-hosted, this is the direct graph name.",
+				hint: "Optional graph identifier. Leave empty to use the server default graph.",
 			},
 			// ── Operation ─────────────────────────────────────────────────────────
 			{
@@ -147,11 +156,11 @@ export class GraphRag implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
-						name: "Ask Question",
+						name: "Retrieve Context",
 						value: "question",
 						description:
-							"Ask a natural-language question; the server answers from its knowledge graph",
-						action: "Ask a question to the knowledge graph",
+							"Retrieve ranked context documents from the knowledge graph for downstream AI answering",
+						action: "Retrieve context from the knowledge graph",
 					},
 					{
 						name: "Ingest Text",
@@ -165,17 +174,12 @@ export class GraphRag implements INodeType {
 						description: "Ingest all markdown files from a public GitHub repository URL",
 						action: "Ingest a GitHub repository",
 					},
-					{
-						name: "List Documents",
-						value: "listDocuments",
-						description: "List all documents that have been ingested into the knowledge graph",
-						action: "List ingested documents",
-					},
 				],
 				default: "question",
+				hint: "Choose whether to retrieve context or ingest content.",
 			},
 
-			// ── Ask Question ─────────────────────────────────────────────────────
+			// ── Retrieve Context ────────────────────────────────────────────────
 			{
 				displayName: "Question",
 				name: "questionText",
@@ -183,7 +187,9 @@ export class GraphRag implements INodeType {
 				typeOptions: { rows: 3 },
 				default:
 					'={{ $fromAI("question", "Natural-language question to ask the knowledge graph. Only use this for questions, never for ingesting URLs or text.") }}',
-				description: "The question to ask. The server answers using its LLM and knowledge graph.",
+				description:
+					"The question used to retrieve ranked context documents from the knowledge graph",
+				hint: "Natural-language question to retrieve relevant context documents.",
 				displayOptions: { show: { operation: ["question"] } },
 			},
 			{
@@ -191,16 +197,30 @@ export class GraphRag implements INodeType {
 				name: "queryStrategy",
 				type: "options",
 				options: [
-					{ name: "Auto (Default)", value: "auto" },
-					{ name: "Local — Fast, Single-Hop", value: "local" },
+					{ name: "Local (Default) — Fast, Single-Hop", value: "local" },
+					{ name: "Auto", value: "auto" },
 					{ name: "Multi-Path — Deeper, Multi-Hop", value: "multi_path" },
 				],
-				default: "auto",
-				description: "How the server retrieves context. Auto picks the best strategy.",
+				default: "local",
+				description: "How the server retrieves context",
+				hint: "Local is fastest; Multi-Path is deeper; Auto lets the server choose.",
 				displayOptions: { show: { operation: ["question"] } },
 			},
 
 			// ── Ingest Text ──────────────────────────────────────────────────────
+			{
+				displayName: "Input Source",
+				name: "ingestSource",
+				type: "options",
+				options: [
+					{ name: "Text", value: "text" },
+					{ name: "Binary File", value: "binary" },
+				],
+				default: "text",
+				description: "Where to read the content to ingest from",
+				hint: "Select Text to paste content, or Binary File to ingest an incoming file.",
+				displayOptions: { show: { operation: ["ingest"] } },
+			},
 			{
 				displayName: "Document Text",
 				name: "documentText",
@@ -209,14 +229,26 @@ export class GraphRag implements INodeType {
 				default:
 					'={{ $fromAI("document_text", "The plain text or markdown content to ingest into the knowledge graph") }}',
 				description: "Text to ingest. Supports plain text and markdown.",
-				displayOptions: { show: { operation: ["ingest"] } },
+				hint: "Provide the document body in plain text or markdown format.",
+				displayOptions: { show: { operation: ["ingest"], ingestSource: ["text"] } },
 			},
 			{
-				displayName: "Filename",
-				name: "filename",
+				displayName: "Binary Property",
+				name: "binaryPropertyName",
+				type: "string",
+				default: "data",
+				description: "Name of the input binary property containing the file to ingest",
+				hint: "Usually data, unless your incoming binary field uses a different key.",
+				displayOptions: { show: { operation: ["ingest"], ingestSource: ["binary"] } },
+			},
+			{
+				displayName: "Document Name",
+				name: "documentName",
 				type: "string",
 				default: "document.txt",
-				description: "Filename hint for the server. Use .txt for plain text, .md for markdown.",
+				description:
+					"Document name hint for the server. Use .txt/.md for text input and .pdf for binary PDF input.",
+				hint: "Document identifier and extension hint sent to the server.",
 				displayOptions: { show: { operation: ["ingest"] } },
 			},
 
@@ -229,6 +261,7 @@ export class GraphRag implements INodeType {
 					'={{ $fromAI("github_url", "Public GitHub repository URL to ingest, e.g. https://github.com/owner/repo") }}',
 				description:
 					"URL of the public GitHub repository (e.g. https://github.com/FalkorDB/GraphRAG-SDK). Discovers and ingests all .md files.",
+				hint: "Public repository URL whose markdown files should be ingested.",
 				displayOptions: { show: { operation: ["ingestGithub"] } },
 			},
 			{
@@ -237,6 +270,7 @@ export class GraphRag implements INodeType {
 				type: "string",
 				default: "",
 				description: "Branch, tag, or commit SHA (leave blank for the default branch)",
+				hint: "Optional Git ref to pin ingestion to a specific branch, tag, or commit.",
 				displayOptions: { show: { operation: ["ingestGithub"] } },
 			},
 
@@ -247,6 +281,7 @@ export class GraphRag implements INodeType {
 				type: "boolean",
 				default: false,
 				description: "Whether to show advanced chunking and extraction options",
+				hint: "Enable extra controls for chunking and entity extraction.",
 				displayOptions: { show: { operation: ["ingest", "ingestGithub"] } },
 			},
 			...ADVANCED_INGEST_FIELDS,
@@ -283,29 +318,62 @@ export class GraphRag implements INodeType {
 			const graphName = (this.getNodeParameter("graphName", i, "") as string).trim();
 			const client = new GraphRagClient({
 				serverUrl: credentials.serverUrl as string,
-				bearerToken: (credentials.bearerToken as string) || undefined,
+				apiToken: (credentials.apiToken as string) || undefined,
+				requestTimeoutSeconds: Number(credentials.requestTimeoutSeconds ?? 60),
 				graphName: graphName || undefined,
 			});
 			const operation = this.getNodeParameter("operation", i) as string;
 			try {
 				if (operation === "question") {
 					const q = this.getNodeParameter("questionText", i) as string;
-					const strategy = this.getNodeParameter("queryStrategy", i) as string;
+					const strategy = this.getNodeParameter("queryStrategy", i, "local") as string;
 					const opts: QueryOptions = {
-						strategy: strategy === "auto" ? undefined : (strategy as QueryOptions["strategy"]),
+						strategy: strategy as QueryOptions["strategy"],
+						responseMode: "retrieve_only",
 					};
 					const result = await client.question(q, opts);
+					const output = {
+						question: q,
+						documents: (result as { documents?: unknown[] }).documents ?? [],
+						count: (result as { count?: number }).count ?? 0,
+					};
 					returnData.push({
-						json: { question: q, ...result },
+						json: output,
 						pairedItem: { item: i },
 					});
 				} else if (operation === "ingest") {
-					const text = this.getNodeParameter("documentText", i) as string;
-					const filename = this.getNodeParameter("filename", i) as string;
+					const configuredDocumentName = this.getNodeParameter(
+						"documentName",
+						i,
+						"document.txt",
+					) as string;
+					// Backward compatibility for existing workflows saved with the old parameter key.
+					let legacyDocumentName = "";
+					try {
+						legacyDocumentName = this.getNodeParameter("filename", i, "") as string;
+					} catch {
+						legacyDocumentName = "";
+					}
+					const documentName = legacyDocumentName || configuredDocumentName;
+					const source = this.getNodeParameter("ingestSource", i, "text") as "text" | "binary";
 					const opts = getIngestOpts(i);
-					const result = await client.ingest(text, filename, opts);
+					const result =
+						source === "binary"
+							? await client.ingestBuffer(
+									await this.helpers.getBinaryDataBuffer(
+										i,
+										this.getNodeParameter("binaryPropertyName", i, "data") as string,
+									),
+									documentName,
+									opts,
+								)
+							: await client.ingest(
+									this.getNodeParameter("documentText", i) as string,
+									documentName,
+									opts,
+								);
 					returnData.push({
-						json: { filename, ...result },
+						json: { documentName, ...result },
 						pairedItem: { item: i },
 					});
 				} else if (operation === "ingestGithub") {
@@ -314,12 +382,6 @@ export class GraphRag implements INodeType {
 					const opts = getIngestOpts(i);
 					const result = await client.ingestGithub(repoUrl, ref, opts);
 					returnData.push({ json: { ...result }, pairedItem: { item: i } });
-				} else if (operation === "listDocuments") {
-					const docs = await client.listDocuments();
-					returnData.push({
-						json: { documents: docs, count: docs.length },
-						pairedItem: { item: i },
-					});
 				} else {
 					throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, {
 						itemIndex: i,
@@ -332,7 +394,7 @@ export class GraphRag implements INodeType {
 						pairedItem: { item: i },
 					});
 				} else {
-					throw err;
+					throw new NodeOperationError(this.getNode(), (err as Error).message, { itemIndex: i });
 				}
 			}
 		}
