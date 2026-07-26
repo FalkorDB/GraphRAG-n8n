@@ -1,7 +1,7 @@
 # n8n-nodes-falkordb-graphrag
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![npm version](https://img.shields.io/npm/v/n8n-nodes-falkordb-graphrag.svg)](https://www.npmjs.com/package/n8n-nodes-falkordb-graphrag)
+[![npm version](https://img.shields.io/npm/v/@falkordb/n8n-nodes-graphrag.svg)](https://www.npmjs.com/package/n8n-nodes-falkordb-graphrag)
 [![PR Checks](https://github.com/FalkorDB/GraphRAG-n8n/actions/workflows/pr-checks.yml/badge.svg)](https://github.com/FalkorDB/GraphRAG-n8n/actions/workflows/pr-checks.yml)
 [![Spellcheck](https://github.com/FalkorDB/GraphRAG-n8n/actions/workflows/spellcheck.yml/badge.svg)](https://github.com/FalkorDB/GraphRAG-n8n/actions/workflows/spellcheck.yml)
 
