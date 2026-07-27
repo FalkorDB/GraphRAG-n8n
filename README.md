@@ -247,6 +247,9 @@ content short-circuits to a no-op. Requires GraphRAG-Server with the
 
 **Output** — `{ status, document, documentId, noOp, nodesCreated, relationshipsCreated, chunksIndexed, cachedChunks, extractedChunks }`
 
+See [`workflows/10_action_github_sync.json`](workflows/10_action_github_sync.json)
+for a complete GitHub-push-to-knowledge-graph sync built on this operation.
+
 #### Delete Document
 
 Removes an ingested document from the knowledge graph, together with its chunks and
@@ -280,10 +283,11 @@ Update Document operations to reveal these controls:
 Import any file from [`workflows/`](workflows) via **Workflows → Import from File**
 in n8n.
 
-After importing, update the credential references: pipeline examples (`01`–`05`)
-need the **FalkorDB GraphRAG Server API** credential, and the AI Agent tool examples
+After importing, update the credential references: pipeline examples (`01`–`05`, `10`)
+need the **FalkorDB GraphRAG Server API** credential, the AI Agent tool examples
 (`06`–`09`) also need an **AI model** credential (e.g. OpenAI) attached to the
-Agent node.
+Agent node, and the GitHub sync example (`10`) additionally needs a **GitHub**
+credential on its trigger.
 
 | File | Node style | Operation |
 | --- | --- | --- |
@@ -296,6 +300,7 @@ Agent node.
 | [`07_tool_ingest_github.json`](workflows/07_tool_ingest_github.json) | AI Agent tool | Ingest GitHub Repo |
 | [`08_tool_list_documents.json`](workflows/08_tool_list_documents.json) | AI Agent tool | Retrieve Context |
 | [`09_tool_ask_question.json`](workflows/09_tool_ask_question.json) | AI Agent tool | Ask Question |
+| [`10_action_github_sync.json`](workflows/10_action_github_sync.json) | Pipeline | Update Document + List Documents (GitHub push sync) |
 
 ## Contributing
 

@@ -1,0 +1,204 @@
+{
+  "name": "10 — Action: GitHub Sync (Update Document)",
+  "nodes": [
+    {
+      "parameters": {
+        "owner": {
+          "__rl": true,
+          "value": "FalkorDB",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "GraphRAG-SDK",
+          "mode": "name"
+        },
+        "events": ["push"]
+      },
+      "id": "github-trigger",
+      "name": "GitHub Trigger",
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "main-branch-only",
+              "leftValue": "={{ $json.body.ref }}",
+              "rightValue": "refs/heads/main",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-main-branch",
+      "name": "Main Branch Only",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// One item per Markdown file added or modified by the push.\nconst push = $input.first().json.body;\nconst branch = (push.ref ?? \"\").replace(\"refs/heads/\", \"\");\nconst repo = push.repository.full_name;\nconst files = new Set();\nfor (const commit of push.commits ?? []) {\n\tfor (const path of [...(commit.added ?? []), ...(commit.modified ?? [])]) {\n\t\tif (path.endsWith(\".md\")) files.add(path);\n\t}\n}\nreturn [...files].map((path) => ({\n\tjson: {\n\t\tpath,\n\t\tname: path.split(\"/\").pop(),\n\t\trawUrl: `https://raw.githubusercontent.com/${repo}/${branch}/${path}`,\n\t},\n}));"
+      },
+      "id": "changed-files",
+      "name": "Changed Markdown Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.rawUrl }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "content"
+            }
+          }
+        }
+      },
+      "id": "fetch-raw-file",
+      "name": "Fetch Raw File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "updateDocument",
+        "updateDocumentName": "={{ $('Changed Markdown Files').item.json.name }}",
+        "updateDocumentText": "={{ $json.content }}",
+        "upsert": true,
+        "useChunkCache": true,
+        "graphName": "knowledge-graph"
+      },
+      "id": "update-document",
+      "name": "Update Document",
+      "type": "@falkordb/n8n-nodes-graphrag.graphRagAction",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ],
+      "credentials": {
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "listDocuments",
+        "graphName": "knowledge-graph"
+      },
+      "id": "list-documents",
+      "name": "List Documents",
+      "type": "@falkordb/n8n-nodes-graphrag.graphRagAction",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        300
+      ],
+      "credentials": {
+        "falkorDbGraphRagApi": {
+          "name": "FalkorDB GraphRAG Server account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "GitHub Trigger": {
+      "main": [
+        [
+          {
+            "node": "Main Branch Only",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Main Branch Only": {
+      "main": [
+        [
+          {
+            "node": "Changed Markdown Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Changed Markdown Files": {
+      "main": [
+        [
+          {
+            "node": "Fetch Raw File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Raw File": {
+      "main": [
+        [
+          {
+            "node": "Update Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Document": {
+      "main": [
+        [
+          {
+            "node": "List Documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "Keeps a knowledge graph in sync with a GitHub repo: on every push to main, changed Markdown files are fetched and applied via Update Document (upsert on, chunk cache on), then List Documents shows the resulting state. Edit the trigger owner/repository and the Graph Name fields."
+  }
+}
