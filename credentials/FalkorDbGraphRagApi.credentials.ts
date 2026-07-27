@@ -1,9 +1,13 @@
-import { ICredentialType, ICredentialTestRequest, INodeProperties } from "n8n-workflow";
+import { ICredentialType, ICredentialTestRequest, INodeProperties, Icon } from "n8n-workflow";
 
 export class FalkorDbGraphRagApi implements ICredentialType {
 	name = "falkorDbGraphRagApi";
 	displayName = "FalkorDB GraphRAG Server API";
 	documentationUrl = "https://github.com/FalkorDB/GraphRAG-Server";
+	icon: Icon = {
+		light: "file:../nodes/GraphRag/falkordb-f.svg",
+		dark: "file:../nodes/GraphRag/falkordb-f-dark.svg",
+	};
 
 	properties: INodeProperties[] = [
 		{

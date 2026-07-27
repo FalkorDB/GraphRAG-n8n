@@ -117,9 +117,13 @@ export class GraphRagAction implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: "FalkorDB GraphRAG",
 		name: "graphRagAction",
-		icon: "file:falkordb-f.svg",
+		icon: {
+			light: "file:falkordb-f.svg",
+			dark: "file:falkordb-f-dark.svg",
+		},
 		group: ["transform"],
 		version: 1,
+		usableAsTool: true,
 		description:
 			"Query or ingest data in a FalkorDB GraphRAG knowledge graph. " +
 			"Use 'Ask Question' to answer questions from the knowledge graph. " +
@@ -165,7 +169,7 @@ export class GraphRagAction implements INodeType {
 						name: "Ingest GitHub Repo",
 						value: "ingestGithub",
 						description: "Ingest all markdown files from a public GitHub repository URL",
-						action: "Ingest a GitHub repository",
+						action: "Ingest a github repository",
 					},
 					{
 						name: "List Documents",
