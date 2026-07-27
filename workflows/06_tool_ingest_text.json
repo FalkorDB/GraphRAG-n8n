@@ -1,5 +1,5 @@
 {
-  "name": "07 — Tool: Retrieve Context",
+  "name": "06 — Tool: Ingest Text",
   "nodes": [
     {
       "parameters": {},
@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { chatInput: \"Retrieve context about the key topics in the knowledge graph.\" } }];"
+        "jsCode": "return [{ json: { chatInput: \"Please ingest the following text into the knowledge graph:\\n\\nAcme Corporation is headquartered in San Francisco and was founded by John Smith in 2010. The company develops cloud infrastructure software used by over 500 enterprise clients worldwide. Jane Doe serves as the Chief Technology Officer and leads a team of 200 engineers. Acme's flagship product, CloudCore, integrates with Amazon Web Services and Microsoft Azure. In 2023, Acme acquired DataBridge Inc., a startup based in Austin, Texas, for $120 million. DataBridge was co-founded by Robert Lee and specializes in real-time data pipeline orchestration. CloudCore relies on PostgreSQL for metadata storage and Redis for caching. The engineering team uses GitHub for version control and deploys via Kubernetes on AWS EKS.\" } }];"
       },
       "id": "set-input",
       "name": "Set Message",
@@ -28,7 +28,7 @@
     {
       "parameters": {
         "options": {
-          "systemMessage": "You are a knowledge graph assistant. Use the FalkorDB GraphRAG tool to retrieve relevant context from the knowledge graph before answering."
+          "systemMessage": "You are a knowledge graph ingestion assistant. When given text, use the FalkorDB GraphRAG tool to ingest it into the knowledge graph."
         }
       },
       "id": "ai-agent",
@@ -65,14 +65,14 @@
     },
     {
       "parameters": {
-        "operation": "question",
-        "questionText": "={{ $fromAI(\"question\", \"Natural-language question used to retrieve context from the knowledge graph\") }}",
-        "queryStrategy": "local",
+        "operation": "ingest",
+        "documentText": "Acme Corporation is headquartered in San Francisco and was founded by John Smith in 2010. The company develops cloud infrastructure software used by over 500 enterprise clients worldwide. Jane Doe serves as the Chief Technology Officer and leads a team of 200 engineers. Acme's flagship product, CloudCore, integrates with Amazon Web Services and Microsoft Azure. In 2023, Acme acquired DataBridge Inc., a startup based in Austin, Texas, for $120 million. DataBridge was co-founded by Robert Lee and specializes in real-time data pipeline orchestration. CloudCore relies on PostgreSQL for metadata storage and Redis for caching. The engineering team uses GitHub for version control and deploys via Kubernetes on AWS EKS.",
+        "documentName": "acme_overview.txt",
         "graphName": "knowledge-graph"
       },
       "id": "rag-tool",
       "name": "FalkorDB GraphRAG Tool",
-      "type": "n8n-nodes-falkordb-graphrag.graphRag",
+      "type": "@falkordb/n8n-nodes-graphrag.graphRag",
       "typeVersion": 1,
       "position": [
         820,
@@ -135,6 +135,6 @@
     "executionOrder": "v1"
   },
   "meta": {
-    "description": "GraphRag tool node — Retrieve Context operation. AI Agent retrieves graph context for downstream answering."
+    "description": "GraphRag tool node — Ingest Text operation. AI Agent ingests text sent in the chat message."
   }
 }

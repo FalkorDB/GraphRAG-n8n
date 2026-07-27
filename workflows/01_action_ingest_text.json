@@ -21,7 +21,7 @@
       },
       "id": "rag-node",
       "name": "FalkorDB GraphRAG",
-      "type": "n8n-nodes-falkordb-graphrag.graphRagAction",
+      "type": "@falkordb/n8n-nodes-graphrag.graphRagAction",
       "typeVersion": 1,
       "position": [
         460,
