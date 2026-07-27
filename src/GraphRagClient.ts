@@ -14,6 +14,7 @@ import { clearTimeout as clearNodeTimeout, setTimeout as setNodeTimeout } from "
  *
  * Document management:
  *   - Update document: PUT    /api/documents/{name}  (multipart, in-place diff update)
+ *   - Delete document: DELETE /api/documents/{id}    (requires X-Confirm-Delete header)
  */
 
 export interface GraphRagConfig {
@@ -64,6 +65,11 @@ export interface UpdateDocumentResult {
 	chunksIndexed: number;
 	cachedChunks: number;
 	extractedChunks: number;
+}
+
+export interface DeleteDocumentResult {
+	status: string;
+	documentId: string;
 }
 
 // ── Ingest options ────────────────────────────────────────────────────────────
@@ -496,6 +502,28 @@ export class GraphRagClient {
 			cachedChunks: data.cached_chunks ?? 0,
 			extractedChunks: data.extracted_chunks ?? 0,
 		};
+	}
+
+	// ── Delete document ──────────────────────────────────────────────────────
+
+	/**
+	 * Delete an ingested document (and its now-orphaned chunks/entities) via
+	 * DELETE /api/documents/{id}. Sends the X-Confirm-Delete header the server
+	 * requires for destructive operations.
+	 */
+	async deleteDocument(documentId: string): Promise<DeleteDocumentResult> {
+		const encodedId = documentId.split("/").map(encodeURIComponent).join("/");
+		const res = await this.fetchWithTimeout(`${this.base}/api/documents/${encodedId}${this.qs()}`, {
+			method: "DELETE",
+			headers: {
+				"X-Requested-With": "XMLHttpRequest",
+				"X-Confirm-Delete": "true",
+				...this.authHeader,
+			},
+		});
+		if (!res.ok) throw await this.httpError("Delete document", res);
+		const data = (await res.json().catch(() => ({}))) as { status?: string };
+		return { status: data.status ?? "deleted", documentId };
 	}
 
 	private _extractDocumentsFromContext(data: {
