@@ -1,7 +1,7 @@
-# n8n-nodes-falkordb-graphrag
+# @falkordb/n8n-nodes-graphrag
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![npm version](https://img.shields.io/npm/v/@falkordb/n8n-nodes-graphrag.svg)](https://www.npmjs.com/package/n8n-nodes-falkordb-graphrag)
+[![npm version](https://img.shields.io/npm/v/@falkordb/n8n-nodes-graphrag.svg)](https://www.npmjs.com/package/@falkordb/n8n-nodes-graphrag)
 [![PR Checks](https://github.com/FalkorDB/GraphRAG-n8n/actions/workflows/pr-checks.yml/badge.svg?branch=main&event=push)](https://github.com/FalkorDB/GraphRAG-n8n/actions/workflows/pr-checks.yml)
 [![Spellcheck](https://github.com/FalkorDB/GraphRAG-n8n/actions/workflows/spellcheck.yml/badge.svg?branch=main&event=push)](https://github.com/FalkorDB/GraphRAG-n8n/actions/workflows/spellcheck.yml)
 
@@ -44,11 +44,13 @@ GraphRAG-Server handles ingestion, entity extraction, embedding, and retrieval.
 
 ## Features
 
-  | **Ingest GitHub Repo** | Discover and ingest every Markdown file in a public GitHub repository. |
-  | **List Documents** | List all documents that have been ingested. |
+- **Pipeline operations** — **Ask Question**, **Ingest Text**, **Ingest GitHub Repo**,
+  and **List Documents**.
+- **AI Agent tool operations** — **Retrieve Context**, **Ingest Text**, and
+  **Ingest GitHub Repo**.
 
-- **Named graph support** — a **Graph Name** field on every operation lets you target
-  a specific FalkorDB graph; leave it blank to use the server default.
+- **Named graph targeting** — every operation includes a **Graph Name** field so you
+  can target a specific FalkorDB graph. It defaults to `n8n-graph`.
 - **Flexible GitHub ingestion** — specify a branch, tag, or commit SHA to pin the
   exact revision you want to ingest.
 - **Advanced ingest options** — chunking strategy, chunk size and overlap, entity
@@ -88,7 +90,7 @@ returns the structured JSON response as n8n item data.
 ### From the n8n UI (recommended)
 
 1. Open n8n, go to **Settings → Community Nodes → Install**.
-2. Enter the package name `n8n-nodes-falkordb-graphrag` and confirm.
+2. Enter the package name `@falkordb/n8n-nodes-graphrag` and confirm.
 3. After installation the **FalkorDB GraphRAG** and **FalkorDB GraphRAG Tool**
    nodes appear in the node panel under the _FalkorDB_ category.
 
@@ -96,7 +98,7 @@ returns the structured JSON response as n8n item data.
 
 ```bash
 # in your n8n custom-nodes folder, typically ~/.n8n/nodes
-npm install n8n-nodes-falkordb-graphrag
+npm install @falkordb/n8n-nodes-graphrag
 ```
 
 Restart n8n after installation. For more details see the n8n docs on
@@ -110,7 +112,7 @@ Both nodes share a single credential type — **FalkorDB GraphRAG Server API**:
 | --- | --- | --- |
 | **Server URL** | yes | Base URL of your GraphRAG-Server, e.g. `http://localhost:8000`. |
 | **API Token** | no | Sent as `Authorization: Bearer …`. Create it in GraphRAG-Server **Settings → API Tokens**. |
-| **Request Timeout (Seconds)** | yes | Per-request timeout. Requests abort when this limit is reached. |
+| **Request Timeout (Seconds)** | yes | Per-request timeout. Requests abort when this limit is reached. | 
 
 Create the credential once under **Credentials → New → FalkorDB GraphRAG Server API**
 and reuse it across all nodes. Leave **API Token** blank only when your server
@@ -165,9 +167,13 @@ No manual wiring of input data is needed.
 
 ### Operations reference
 
-Both nodes expose the same four operations. Configure the **Graph Name** field
-(optional) if you want to target a named FalkorDB graph instead of the server
-default.
+The **pipeline node** exposes four operations: **Ask Question**, **Ingest Text**,
+**Ingest GitHub Repo**, and **List Documents**.
+
+The **AI Agent tool node** exposes three operations: **Retrieve Context**,
+**Ingest Text**, and **Ingest GitHub Repo**.
+
+Both nodes include **Graph Name** and default it to `n8n-graph`.
 
 #### Ask Question
 
@@ -177,8 +183,8 @@ answer grounded in the knowledge graph.
 | Parameter | Description | Default |
 | --- | --- | --- |
 | **Question** | The question to ask. | — |
-| **Retrieval Strategy** | `auto` — server picks best; `local` — fast, single-hop; `multi_path` — deeper, multi-hop. | `auto` |
-| **Graph Name** | Named graph to query. Leave blank for the server default. | _(blank)_ |
+| **Retrieval Strategy** | `auto` — server picks best; `local` — fast, single-hop; `multi_path` — deeper, multi-hop. | `local` |
+| **Graph Name** | Named graph to query. This value defaults to `n8n-graph`. | `n8n-graph` |
 
 **Output** — `{ question, answer }`
 
@@ -191,7 +197,7 @@ extraction, and graph insertion.
 | --- | --- | --- |
 | **Document Text** | The text content to ingest. Supports plain text and Markdown. | — |
 | **Document Name** | Document name hint for the server — use `.txt` for plain text, `.md` for Markdown. | `document.txt` |
-| **Graph Name** | Named graph to ingest into. | _(blank)_ |
+| **Graph Name** | Named graph to ingest into. This value defaults to `n8n-graph`. | `n8n-graph` |
 | **Advanced Options** | Reveal chunking and extraction controls (see below). | off |
 
 **Output** — `{ documentName, status, nodesCreated, relationshipsCreated, chunksIndexed }`
@@ -205,10 +211,10 @@ in a single operation.
 | --- | --- | --- |
 | **GitHub Repo URL** | Public repository URL, e.g. `https://github.com/FalkorDB/GraphRAG-SDK`. | — |
 | **Branch / Tag / Commit** | Specific ref to ingest. Leave blank for the default branch. | _(blank, uses default branch)_ |
-| **Graph Name** | Named graph to ingest into. | _(blank)_ |
+| **Graph Name** | Named graph to ingest into. This value defaults to `n8n-graph`. | `n8n-graph` |
 | **Advanced Options** | Reveal chunking and extraction controls (see below). | off |
 
-**Output** — `{ repoUrl, filesIngested, totalNodesCreated, totalRelationshipsCreated, files, skippedFiles }`
+**Output** — `{ repoUrl, filesIngested, totalNodesCreated, totalRelationshipsCreated, files, skippedFiles, finalized }`
 
 #### List Documents
 
@@ -216,7 +222,7 @@ Returns a list of all documents that have been ingested into the knowledge graph
 
 | Parameter | Description | Default |
 | --- | --- | --- |
-| **Graph Name** | Named graph to list documents from. | _(blank)_ |
+| **Graph Name** | Named graph to list documents from. This value defaults to `n8n-graph`. | `n8n-graph` |
 
 **Output** — `{ documents: [...], count }`
 
@@ -232,7 +238,7 @@ reveal these controls:
 | **Overlap Sentences** | Number of sentences of overlap between consecutive chunks (0–10). Used with `sentence_token_cap`. | 1 |
 | **Chunk Size (Tokens)** | Tokens per chunk (100–5000). Used with `fixed_size`. | 1000 |
 | **Chunk Overlap (Tokens)** | Token overlap between consecutive fixed-size chunks (0–500). | 100 |
-| **Resolution Strategy** | How duplicate entities are resolved: `exact` (default), `description_merge`, `semantic`, `llm_verified`, or `all`. | `exact` |
+| **Resolution Strategy** | Duplicate-entity resolution. Pipeline node: `exact` or `fuzzy`. AI Tool node: `exact`, `description_merge`, `semantic`, `llm_verified`, or `all`. | `exact` |
 | **Entity Types** | Comma-separated list of entity types to extract, e.g. `Person,Organization`. Leave blank to extract all types. | _(blank, all types)_ |
 
 ### Example workflows
@@ -253,8 +259,8 @@ Agent node.
 | [`04_action_ask_question.json`](workflows/04_action_ask_question.json) | Pipeline | Ask Question |
 | [`05_tool_ingest_text.json`](workflows/05_tool_ingest_text.json) | AI Agent tool | Ingest Text |
 | [`06_tool_ingest_github.json`](workflows/06_tool_ingest_github.json) | AI Agent tool | Ingest GitHub Repo |
-| [`07_tool_list_documents.json`](workflows/07_tool_list_documents.json) | AI Agent tool | List Documents |
-| [`08_tool_ask_question.json`](workflows/08_tool_ask_question.json) | AI Agent tool | Ask Question |
+| [`07_tool_list_documents.json`](workflows/07_tool_list_documents.json) | AI Agent tool | Retrieve Context |
+| [`08_tool_ask_question.json`](workflows/08_tool_ask_question.json) | AI Agent tool | Ask Question (retrieve context) |
 | [`09_action_ingest_and_verify_falkordb_docs.json`](workflows/09_action_ingest_and_verify_falkordb_docs.json) | Pipeline | Ingest + verify FalkorDB docs end-to-end |
 | [`10_action_retrieve_only_chat_model.json`](workflows/10_action_retrieve_only_chat_model.json) | Pipeline + chat model | Retrieve only -> generate final answer |
 

@@ -72,5 +72,15 @@ module.exports = {
 				'n8n-nodes-base/node-class-description-outputs-wrong': 'off',
 			},
 		},
+		{
+			// Community package scanner enforces enum connection types for regular
+			// nodes, which conflicts with these older base rules expecting ['main'].
+			files: ['./nodes/GraphRagAction/GraphRagAction.node.ts'],
+			plugins: ['eslint-plugin-n8n-nodes-base'],
+			rules: {
+				'n8n-nodes-base/node-class-description-inputs-wrong-regular-node': 'off',
+				'n8n-nodes-base/node-class-description-outputs-wrong': 'off',
+			},
+		},
 	],
 };
