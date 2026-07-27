@@ -130,7 +130,7 @@ export class GraphRagAction implements INodeType {
 		group: ["transform"],
 		version: 1,
 		subtitle:
-			'={{ ({ question: "Ask Question", ingest: "Ingest Text", ingestGithub: "Ingest GitHub Repo", listDocuments: "List Documents", updateDocument: "Update Document" })[$parameter["operation"]] || $parameter["operation"] }}',
+			'={{ ({ question: "Ask Question", ingest: "Ingest Text", ingestGithub: "Ingest GitHub Repo", listDocuments: "List Documents", updateDocument: "Update Document", deleteDocument: "Delete Document" })[$parameter["operation"]] || $parameter["operation"] }}',
 		description:
 			"Query or ingest data in a FalkorDB GraphRAG knowledge graph. " +
 			"Use 'Ask Question' to answer questions from the knowledge graph. " +
@@ -138,6 +138,7 @@ export class GraphRagAction implements INodeType {
 			"Use 'Ingest GitHub Repo' to ingest all markdown files from a GitHub repository. " +
 			"Use 'List Documents' to see what has been ingested. " +
 			"Use 'Update Document' to refresh an ingested document in place. " +
+			"Use 'Delete Document' to remove one. " +
 			"Connects directly in a pipeline (main input/output).",
 		defaults: { name: "FalkorDB GraphRAG" },
 		inputs: [NodeConnectionTypes.Main],
@@ -166,6 +167,12 @@ export class GraphRagAction implements INodeType {
 						description:
 							"Ask a natural-language question; the server answers from its knowledge graph",
 						action: "Ask a question to the knowledge graph",
+					},
+					{
+						name: "Delete Document",
+						value: "deleteDocument",
+						description: "Remove an ingested document and its orphaned chunks and entities",
+						action: "Delete an ingested document",
 					},
 					{
 						name: "Ingest GitHub Repo",
@@ -349,6 +356,19 @@ export class GraphRagAction implements INodeType {
 				displayOptions: { show: { operation: ["updateDocument"] } },
 			},
 
+			// ── Delete Document ───────────────────────────────────────────────────
+			{
+				displayName: "Document ID",
+				name: "deleteDocumentId",
+				type: "string",
+				default: "",
+				placeholder: "e.g. handbook.md",
+				description:
+					"ID of the document to delete, as returned by List Documents. Its chunks and orphaned entities are removed too.",
+				hint: "This is destructive — the document must be re-ingested to restore it.",
+				displayOptions: { show: { operation: ["deleteDocument"] } },
+			},
+
 			// ── Advanced ingest options ───────────────────────────────────────────
 			{
 				displayName: "Advanced Options",
@@ -482,6 +502,15 @@ export class GraphRagAction implements INodeType {
 						useChunkCache: this.getNodeParameter("useChunkCache", i, true) as boolean,
 					};
 					const result = await client.updateDocument(documentName, text, opts);
+					returnData.push({ json: { ...result }, pairedItem: { item: i } });
+				} else if (operation === "deleteDocument") {
+					const documentId = (this.getNodeParameter("deleteDocumentId", i) as string).trim();
+					if (!documentId) {
+						throw new NodeOperationError(this.getNode(), "Document ID is required", {
+							itemIndex: i,
+						});
+					}
+					const result = await client.deleteDocument(documentId);
 					returnData.push({ json: { ...result }, pairedItem: { item: i } });
 				} else {
 					throw new NodeOperationError(this.getNode(), `Unknown operation: ${operation}`, {
