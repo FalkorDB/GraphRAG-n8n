@@ -61,21 +61,9 @@ module.exports = {
 			},
 		},
 		{
-			// GraphRag is an AI Agent tool node (inputs: [], outputs: ['ai_tool']).
-			// These two rules assume a regular node with ['main'] connections, so they
-			// false-positive here. Scope the disable to this file only so the regular
-			// GraphRagAction node keeps the checks.
-			files: ['./nodes/GraphRag/GraphRag.node.ts'],
-			plugins: ['eslint-plugin-n8n-nodes-base'],
-			rules: {
-				'n8n-nodes-base/node-class-description-inputs-wrong-regular-node': 'off',
-				'n8n-nodes-base/node-class-description-outputs-wrong': 'off',
-			},
-		},
-		{
-			// Community package scanner enforces enum connection types for regular
-			// nodes, which conflicts with these older base rules expecting ['main'].
-			files: ['./nodes/GraphRagAction/GraphRagAction.node.ts'],
+			// Both GraphRag nodes use connection enums that trip the regular-node
+			// description rules. Keep the disable scoped to these files only.
+			files: ['./nodes/GraphRag/GraphRag.node.ts', './nodes/GraphRagAction/GraphRagAction.node.ts'],
 			plugins: ['eslint-plugin-n8n-nodes-base'],
 			rules: {
 				'n8n-nodes-base/node-class-description-inputs-wrong-regular-node': 'off',

@@ -124,8 +124,8 @@ export class GraphRagAction implements INodeType {
 		},
 		group: ["transform"],
 		version: 1,
-		subtitle: '={{$parameter["operation"]}}',
-		usableAsTool: true,
+		subtitle:
+			'={{ ({ question: "Ask Question", ingest: "Ingest Text", ingestGithub: "Ingest GitHub Repo", listDocuments: "List Documents" })[$parameter["operation"]] || $parameter["operation"] }}',
 		description:
 			"Query or ingest data in a FalkorDB GraphRAG knowledge graph. " +
 			"Use 'Ask Question' to answer questions from the knowledge graph. " +

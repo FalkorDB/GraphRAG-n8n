@@ -1,4 +1,4 @@
-# @falkordb/n8n-nodes-graphrag
+# `@falkordb/n8n-nodes-graphrag`
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![npm version](https://img.shields.io/npm/v/@falkordb/n8n-nodes-graphrag.svg)](https://www.npmjs.com/package/@falkordb/n8n-nodes-graphrag)
@@ -112,7 +112,7 @@ Both nodes share a single credential type — **FalkorDB GraphRAG Server API**:
 | --- | --- | --- |
 | **Server URL** | yes | Base URL of your GraphRAG-Server, e.g. `http://localhost:8000`. |
 | **API Token** | no | Sent as `Authorization: Bearer …`. Create it in GraphRAG-Server **Settings → API Tokens**. |
-| **Request Timeout (Seconds)** | yes | Per-request timeout. Requests abort when this limit is reached. | 
+| **Request Timeout (Seconds)** | yes | Per-request timeout. Requests abort when this limit is reached. |
 
 Create the credential once under **Credentials → New → FalkorDB GraphRAG Server API**
 and reuse it across all nodes. Leave **API Token** blank only when your server
@@ -183,10 +183,11 @@ answer grounded in the knowledge graph.
 | Parameter | Description | Default |
 | --- | --- | --- |
 | **Question** | The question to ask. | — |
-| **Retrieval Strategy** | `auto` — server picks best; `local` — fast, single-hop; `multi_path` — deeper, multi-hop. | `local` |
+| **Response Mode** | `answer` returns the server-generated answer. `retrieveOnly` returns ranked context documents for downstream generation. | `answer` |
+| **Retrieval Strategy** | `auto` — server picks best; `local` — fast, single-hop; `multi_path` — deeper, multi-hop. | `auto` |
 | **Graph Name** | Named graph to query. This value defaults to `n8n-graph`. | `n8n-graph` |
 
-**Output** — `{ question, answer }`
+**Output** — `{ question, answer }` or, for `retrieveOnly`, `{ question, documents, count }`
 
 #### Ingest Text
 
@@ -238,7 +239,7 @@ reveal these controls:
 | **Overlap Sentences** | Number of sentences of overlap between consecutive chunks (0–10). Used with `sentence_token_cap`. | 1 |
 | **Chunk Size (Tokens)** | Tokens per chunk (100–5000). Used with `fixed_size`. | 1000 |
 | **Chunk Overlap (Tokens)** | Token overlap between consecutive fixed-size chunks (0–500). | 100 |
-| **Resolution Strategy** | Duplicate-entity resolution. Pipeline node: `exact` or `fuzzy`. AI Tool node: `exact`, `description_merge`, `semantic`, `llm_verified`, or `all`. | `exact` |
+| **Resolution Strategy** | How duplicate entities are resolved: `exact`, `description_merge`, `semantic`, `llm_verified`, or `all` for the pipeline node; `exact` or `fuzzy` for the AI tool node. | `exact` |
 | **Entity Types** | Comma-separated list of entity types to extract, e.g. `Person,Organization`. Leave blank to extract all types. | _(blank, all types)_ |
 
 ### Example workflows
