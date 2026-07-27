@@ -141,7 +141,7 @@ export class GraphRagClient {
 		try {
 			return await fetch(url, { ...init, signal });
 		} catch (error) {
-			if ((error as Error).name === "AbortError" && timeoutSignal.aborted) {
+			if ((error as Error).name === "AbortError") {
 				throw new Error(`Request timed out after ${this.requestTimeoutMs / 1000} seconds`);
 			}
 			throw error;
