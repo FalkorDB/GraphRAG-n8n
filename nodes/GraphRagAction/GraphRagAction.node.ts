@@ -119,8 +119,8 @@ export class GraphRagAction implements INodeType {
 		displayName: "FalkorDB GraphRAG",
 		name: "graphRagAction",
 		icon: {
-			light: "file:falkordb-f.svg",
-			dark: "file:falkordb-f.svg",
+			light: "file:../../public/F-light.svg",
+			dark: "file:../../public/F-dark.svg",
 		},
 		group: ["transform"],
 		version: 1,
@@ -137,6 +137,7 @@ export class GraphRagAction implements INodeType {
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: "falkorDbGraphRagApi", required: true }],
+		usableAsTool: true,
 		properties: [
 			{
 				displayName: "Graph Name",
@@ -171,7 +172,7 @@ export class GraphRagAction implements INodeType {
 						name: "Ingest GitHub Repo",
 						value: "ingestGithub",
 						description: "Ingest all markdown files from a public GitHub repository URL",
-						action: "Ingest a repository from GitHub",
+						action: "Ingest a repository from github",
 					},
 					{
 						name: "List Documents",
