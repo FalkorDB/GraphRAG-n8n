@@ -131,7 +131,7 @@ export class GraphRag implements INodeType {
 		},
 		group: ["transform"],
 		version: 1,
-		subtitle: "={{$parameter[\"operation\"]}}",
+		subtitle: '={{$parameter["operation"]}}',
 		description:
 			"Retrieve context from or ingest data into a FalkorDB GraphRAG knowledge graph. " +
 			"Use 'Retrieve Context' to fetch ranked context documents from the graph. " +

@@ -124,7 +124,7 @@ export class GraphRagAction implements INodeType {
 		},
 		group: ["transform"],
 		version: 1,
-		subtitle: "={{$parameter[\"operation\"]}}",
+		subtitle: '={{$parameter["operation"]}}',
 		usableAsTool: true,
 		description:
 			"Query or ingest data in a FalkorDB GraphRAG knowledge graph. " +
