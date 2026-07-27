@@ -120,10 +120,11 @@ export class GraphRagAction implements INodeType {
 		name: "graphRagAction",
 		icon: {
 			light: "file:falkordb-f.svg",
-			dark: "file:falkordb-f.svg",
+			dark: "file:falkordb-f-dark.svg",
 		},
 		group: ["transform"],
 		version: 1,
+		usableAsTool: true,
 		subtitle:
 			'={{ ({ question: "Ask Question", ingest: "Ingest Text", ingestGithub: "Ingest GitHub Repo", listDocuments: "List Documents" })[$parameter["operation"]] || $parameter["operation"] }}',
 		description:
@@ -171,7 +172,7 @@ export class GraphRagAction implements INodeType {
 						name: "Ingest GitHub Repo",
 						value: "ingestGithub",
 						description: "Ingest all markdown files from a public GitHub repository URL",
-						action: "Ingest a repository from GitHub",
+						action: "Ingest a repository from github",
 					},
 					{
 						name: "List Documents",

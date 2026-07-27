@@ -127,7 +127,7 @@ export class GraphRag implements INodeType {
 		name: "graphRag",
 		icon: {
 			light: "file:falkordb-f.svg",
-			dark: "file:falkordb-f.svg",
+			dark: "file:falkordb-f-dark.svg",
 		},
 		group: ["transform"],
 		version: 1,
@@ -178,7 +178,7 @@ export class GraphRag implements INodeType {
 						name: "Ingest GitHub Repo",
 						value: "ingestGithub",
 						description: "Ingest all markdown files from a public GitHub repository URL",
-						action: "Ingest a repository from GitHub",
+						action: "Ingest a repository from github",
 					},
 				],
 				default: "question",

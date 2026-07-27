@@ -5,8 +5,8 @@ export class FalkorDbGraphRagApi implements ICredentialType {
 	displayName = "FalkorDB GraphRAG Server API";
 	documentationUrl = "https://github.com/FalkorDB/GraphRAG-Server";
 	icon: Icon = {
-		light: "file:../nodes/GraphRag/falkordb-f.svg" as const,
-		dark: "file:../nodes/GraphRag/falkordb-f.svg" as const,
+		light: "file:../nodes/GraphRag/falkordb-f.svg",
+		dark: "file:../nodes/GraphRag/falkordb-f-dark.svg",
 	};
 
 	properties: INodeProperties[] = [

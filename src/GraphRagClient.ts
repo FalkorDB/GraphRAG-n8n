@@ -1,5 +1,3 @@
-import { clearTimeout as clearNodeTimeout, setTimeout as setNodeTimeout } from "node:timers";
-
 /**
  * HTTP client for the FalkorDB GraphRAG-Server.
  * https://github.com/FalkorDB/GraphRAG-Server
@@ -120,17 +118,35 @@ export class GraphRagClient {
 	}
 
 	private async fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
-		const controller = new AbortController();
-		const timeout = setNodeTimeout(() => controller.abort(), this.requestTimeoutMs);
+		const timeoutSignal = AbortSignal.timeout(this.requestTimeoutMs);
+		let cleanup: (() => void) | undefined;
+		let signal: AbortSignal = timeoutSignal;
+
+		const externalSignal = init.signal;
+		if (externalSignal) {
+			const controller = new AbortController();
+			const abort = () => controller.abort();
+			if (externalSignal.aborted || timeoutSignal.aborted) {
+				controller.abort();
+			} else {
+				externalSignal.addEventListener("abort", abort, { once: true });
+				timeoutSignal.addEventListener("abort", abort, { once: true });
+				cleanup = () => {
+					externalSignal.removeEventListener("abort", abort);
+					timeoutSignal.removeEventListener("abort", abort);
+				};
+			}
+			signal = controller.signal;
+		}
 		try {
-			return await fetch(url, { ...init, signal: controller.signal });
+			return await fetch(url, { ...init, signal });
 		} catch (error) {
 			if ((error as Error).name === "AbortError") {
 				throw new Error(`Request timed out after ${this.requestTimeoutMs / 1000} seconds`);
 			}
 			throw error;
 		} finally {
-			clearNodeTimeout(timeout);
+			cleanup?.();
 		}
 	}
 
