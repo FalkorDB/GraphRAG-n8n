@@ -1,14 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { IExecuteFunctions } from "n8n-workflow";
 
-const { mockQuestion, mockIngest, mockIngestBuffer, mockIngestGithub, mockListDocuments } =
-	vi.hoisted(() => ({
-		mockQuestion: vi.fn(),
-		mockIngest: vi.fn(),
-		mockIngestBuffer: vi.fn(),
-		mockIngestGithub: vi.fn(),
-		mockListDocuments: vi.fn(),
-	}));
+const {
+	mockQuestion,
+	mockIngest,
+	mockIngestBuffer,
+	mockIngestGithub,
+	mockListDocuments,
+	mockUpdateDocument,
+	mockDeleteDocument,
+} = vi.hoisted(() => ({
+	mockQuestion: vi.fn(),
+	mockIngest: vi.fn(),
+	mockIngestBuffer: vi.fn(),
+	mockIngestGithub: vi.fn(),
+	mockListDocuments: vi.fn(),
+	mockUpdateDocument: vi.fn(),
+	mockDeleteDocument: vi.fn(),
+}));
 
 vi.mock("../src/GraphRagClient", () => ({
 	GraphRagClient: vi.fn(function () {
@@ -18,6 +27,8 @@ vi.mock("../src/GraphRagClient", () => ({
 			ingestBuffer: mockIngestBuffer,
 			ingestGithub: mockIngestGithub,
 			listDocuments: mockListDocuments,
+			updateDocument: mockUpdateDocument,
+			deleteDocument: mockDeleteDocument,
 		};
 	}),
 }));
@@ -262,6 +273,104 @@ describe("GraphRagAction — listDocuments operation", () => {
 	});
 });
 
+describe("GraphRagAction — updateDocument operation", () => {
+	beforeEach(() =>
+		mockUpdateDocument.mockResolvedValue({
+			status: "updated",
+			document: "doc.md",
+			documentId: "uploads/doc.md",
+			noOp: false,
+			nodesCreated: 2,
+			relationshipsCreated: 1,
+			chunksIndexed: 3,
+			cachedChunks: 2,
+			extractedChunks: 1,
+		}),
+	);
+
+	it("calls client.updateDocument with name, text, and options", async () => {
+		await run({
+			operation: "updateDocument",
+			updateDocumentName: "doc.md",
+			updateDocumentText: "new content",
+			upsert: true,
+			useChunkCache: false,
+		});
+		expect(mockUpdateDocument).toHaveBeenCalledWith("doc.md", "new content", {
+			upsert: true,
+			useChunkCache: false,
+		});
+	});
+
+	it("passes advanced ingest options when enabled", async () => {
+		await run({
+			operation: "updateDocument",
+			updateDocumentName: "doc.md",
+			updateDocumentText: "text",
+			showAdvanced: true,
+			chunkingStrategy: "fixed_size",
+			maxTokens: 512,
+			overlapSentences: 2,
+			chunkSize: 1500,
+			chunkOverlap: 150,
+			resolutionStrategy: "exact",
+			entityTypes: "Person",
+		});
+		expect(mockUpdateDocument).toHaveBeenCalledWith(
+			"doc.md",
+			"text",
+			expect.objectContaining({ chunkingStrategy: "fixed_size", maxTokens: 512 }),
+		);
+	});
+
+	it("returns the update result in output json", async () => {
+		const [[result]] = await run({
+			operation: "updateDocument",
+			updateDocumentName: "doc.md",
+			updateDocumentText: "new content",
+		});
+		expect(result.json).toMatchObject({
+			status: "updated",
+			documentId: "uploads/doc.md",
+			cachedChunks: 2,
+			extractedChunks: 1,
+		});
+	});
+
+	it("rejects an empty document name", async () => {
+		await expect(
+			run({ operation: "updateDocument", updateDocumentName: "  ", updateDocumentText: "x" }),
+		).rejects.toThrow("Document Name is required");
+		expect(mockUpdateDocument).not.toHaveBeenCalled();
+	});
+});
+
+describe("GraphRagAction — deleteDocument operation", () => {
+	beforeEach(() =>
+		mockDeleteDocument.mockResolvedValue({ status: "deleted", documentId: "uploads/doc.md" }),
+	);
+
+	it("calls client.deleteDocument with the id", async () => {
+		await run({ operation: "deleteDocument", deleteDocumentId: "uploads/doc.md" });
+		expect(mockDeleteDocument).toHaveBeenCalledWith("uploads/doc.md");
+	});
+
+	it("returns the delete result in output json", async () => {
+		const [[result]] = await run({
+			operation: "deleteDocument",
+			deleteDocumentId: "uploads/doc.md",
+		});
+		expect(result.json).toMatchObject({ status: "deleted", documentId: "uploads/doc.md" });
+	});
+
+	it("rejects an empty document id", async () => {
+		await expect(run({ operation: "deleteDocument", deleteDocumentId: "" })).rejects.toThrow(
+			"Document ID is required",
+		);
+		expect(mockDeleteDocument).not.toHaveBeenCalled();
+	});
+});
+
 describe("GraphRagAction — error handling", () => {
 	it("throws for unknown operation", async () => {
 		const node = new GraphRagAction();
@@ -291,13 +400,20 @@ describe("GraphRagAction node description", () => {
 		expect(creds.some((c: { name: string }) => c.name === "falkorDbGraphRagApi")).toBe(true);
 	});
 
-	it("exposes all 4 operations", () => {
+	it("exposes all 6 operations", () => {
 		const opProp = node.description.properties.find(
 			(p: { name: string }) => p.name === "operation",
 		);
 		const values = ((opProp?.options ?? []) as Array<{ value: string }>).map((o) => o.value);
 		expect(values).toEqual(
-			expect.arrayContaining(["question", "ingest", "ingestGithub", "listDocuments"]),
+			expect.arrayContaining([
+				"question",
+				"ingest",
+				"ingestGithub",
+				"listDocuments",
+				"updateDocument",
+				"deleteDocument",
+			]),
 		);
 	});
 });
