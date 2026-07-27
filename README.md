@@ -146,7 +146,7 @@ curl -sS -X POST "$SERVER/api/query?graph_name=<yourGraph>" \
 ```
 
 See [`workflows/04_action_ask_question.json`](workflows/04_action_ask_question.json)
-and [`workflows/10_action_retrieve_only_chat_model.json`](workflows/10_action_retrieve_only_chat_model.json).
+and [`workflows/05_action_retrieve_only.json`](workflows/05_action_retrieve_only.json).
 
 ```
 [Trigger] ──▶ [FalkorDB GraphRAG] ──▶ [Send Email / Slack / …]
@@ -247,9 +247,9 @@ reveal these controls:
 Import any file from [`workflows/`](workflows) via **Workflows → Import from File**
 in n8n.
 
-After importing, update the credential references: pipeline examples (`01`–`04`, `09`)
+After importing, update the credential references: pipeline examples (`01`–`05`)
 need the **FalkorDB GraphRAG Server API** credential, and the AI Agent tool examples
-(`05`–`08`) also need an **AI model** credential (e.g. OpenAI) attached to the
+(`06`–`09`) also need an **AI model** credential (e.g. OpenAI) attached to the
 Agent node.
 
 | File | Node style | Operation |
@@ -258,12 +258,11 @@ Agent node.
 | [`02_action_ingest_github.json`](workflows/02_action_ingest_github.json) | Pipeline | Ingest GitHub Repo |
 | [`03_action_list_documents.json`](workflows/03_action_list_documents.json) | Pipeline | List Documents |
 | [`04_action_ask_question.json`](workflows/04_action_ask_question.json) | Pipeline | Ask Question |
-| [`05_tool_ingest_text.json`](workflows/05_tool_ingest_text.json) | AI Agent tool | Ingest Text |
-| [`06_tool_ingest_github.json`](workflows/06_tool_ingest_github.json) | AI Agent tool | Ingest GitHub Repo |
-| [`07_tool_list_documents.json`](workflows/07_tool_list_documents.json) | AI Agent tool | Retrieve Context |
-| [`08_tool_ask_question.json`](workflows/08_tool_ask_question.json) | AI Agent tool | Ask Question (retrieve context) |
-| [`09_action_ingest_and_verify_falkordb_docs.json`](workflows/09_action_ingest_and_verify_falkordb_docs.json) | Pipeline | Ingest + verify FalkorDB docs end-to-end |
-| [`10_action_retrieve_only_chat_model.json`](workflows/10_action_retrieve_only_chat_model.json) | Pipeline + chat model | Retrieve only -> generate final answer |
+| [`05_action_retrieve_only.json`](workflows/05_action_retrieve_only.json) | Pipeline | Retrieve Only |
+| [`06_tool_ingest_text.json`](workflows/06_tool_ingest_text.json) | AI Agent tool | Ingest Text |
+| [`07_tool_ingest_github.json`](workflows/07_tool_ingest_github.json) | AI Agent tool | Ingest GitHub Repo |
+| [`08_tool_list_documents.json`](workflows/08_tool_list_documents.json) | AI Agent tool | Retrieve Context |
+| [`09_tool_ask_question.json`](workflows/09_tool_ask_question.json) | AI Agent tool | Ask Question |
 
 ## Contributing
 

@@ -1,5 +1,5 @@
 {
-  "name": "06 — Tool: Ingest GitHub Repo",
+  "name": "09 — Tool: Ask Question",
   "nodes": [
     {
       "parameters": {},
@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { chatInput: \"Please ingest this GitHub repository into the knowledge graph: https://github.com/FalkorDB/GraphRAG-SDK\" } }];"
+        "jsCode": "return [{ json: { chatInput: \"What are the main components described in the knowledge graph?\" } }];"
       },
       "id": "set-input",
       "name": "Set Message",
@@ -28,7 +28,7 @@
     {
       "parameters": {
         "options": {
-          "systemMessage": "You are a knowledge graph ingestion assistant. When given a GitHub repository URL, use the FalkorDB GraphRAG tool to ingest its markdown files."
+          "systemMessage": "You are a helpful assistant. Use the FalkorDB GraphRAG tool to answer questions from the knowledge graph."
         }
       },
       "id": "ai-agent",
@@ -65,14 +65,14 @@
     },
     {
       "parameters": {
-        "operation": "ingestGithub",
-        "githubUrl": "={{ $fromAI(\"githubUrl\", \"Full GitHub repository URL to ingest, e.g. https://github.com/org/repo\") }}",
-        "githubRef": "={{ $fromAI(\"githubRef\", \"Branch, tag, or commit SHA. Leave empty for default branch.\") }}",
+        "operation": "question",
+        "questionText": "={{ $fromAI(\"question\", \"Natural-language question to ask the knowledge graph\") }}",
+        "queryStrategy": "local",
         "graphName": "knowledge-graph"
       },
       "id": "rag-tool",
       "name": "FalkorDB GraphRAG Tool",
-      "type": "n8n-nodes-falkordb-graphrag.graphRag",
+      "type": "@falkordb/n8n-nodes-graphrag.graphRag",
       "typeVersion": 1,
       "position": [
         820,
@@ -135,6 +135,6 @@
     "executionOrder": "v1"
   },
   "meta": {
-    "description": "GraphRag tool node — Ingest GitHub Repo operation. AI Agent ingests a GitHub repo URL from the chat message."
+    "description": "GraphRag tool node — Ask Question operation. AI Agent uses the tool to answer chat messages."
   }
 }

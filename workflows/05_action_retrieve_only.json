@@ -1,5 +1,5 @@
 {
-  "name": "03 — Action: List Documents",
+  "name": "05 — Action: Retrieve Only",
   "nodes": [
     {
       "parameters": {},
@@ -14,7 +14,23 @@
     },
     {
       "parameters": {
-        "operation": "listDocuments",
+        "jsCode": "return [{ json: { question: \"What are the main components described in the knowledge graph?\" } }];"
+      },
+      "id": "set-question",
+      "name": "Set Question",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "question",
+        "questionText": "={{ $json.question }}",
+        "responseMode": "retrieveOnly",
+        "queryStrategy": "auto",
         "graphName": "knowledge-graph"
       },
       "id": "rag-node",
@@ -22,7 +38,7 @@
       "type": "@falkordb/n8n-nodes-graphrag.graphRagAction",
       "typeVersion": 1,
       "position": [
-        460,
+        700,
         300
       ],
       "credentials": {
@@ -34,6 +50,17 @@
   ],
   "connections": {
     "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Question": {
       "main": [
         [
           {
@@ -49,6 +76,6 @@
     "executionOrder": "v1"
   },
   "meta": {
-    "description": "GraphRagAction pipeline node — List Documents operation. Click Test Workflow."
+    "description": "GraphRagAction pipeline node — Retrieve Only operation. Use the main input to retrieve graph context without generating a final answer."
   }
 }
