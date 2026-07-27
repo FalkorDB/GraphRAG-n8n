@@ -26,3 +26,7 @@ updates:
       # Hold ESLint on 8.x until the plugin ships an ESLint 9/10-compatible release.
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
+      # @typescript-eslint/parser currently constrains TypeScript to <6.1.0, so TS 7.x
+      # breaks `npm ci` with an ERESOLVE peer dependency conflict in CI.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]

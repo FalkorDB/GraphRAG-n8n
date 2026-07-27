@@ -29,6 +29,7 @@ changelog
 Changelog
 CHANGELOG
 deps
+dev
 dependabot
 Dependabot
 yml
