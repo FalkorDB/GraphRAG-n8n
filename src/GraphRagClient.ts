@@ -1,3 +1,5 @@
+import { clearTimeout as clearNodeTimeout, setTimeout as setNodeTimeout } from "node:timers";
+
 /**
  * HTTP client for the FalkorDB GraphRAG-Server.
  * https://github.com/FalkorDB/GraphRAG-Server
@@ -119,7 +121,7 @@ export class GraphRagClient {
 
 	private async fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), this.requestTimeoutMs);
+		const timeout = setNodeTimeout(() => controller.abort(), this.requestTimeoutMs);
 		try {
 			return await fetch(url, { ...init, signal: controller.signal });
 		} catch (error) {
@@ -128,7 +130,7 @@ export class GraphRagClient {
 			}
 			throw error;
 		} finally {
-			clearTimeout(timeout);
+			clearNodeTimeout(timeout);
 		}
 	}
 

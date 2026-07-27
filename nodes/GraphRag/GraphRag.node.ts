@@ -3,6 +3,7 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
+	NodeConnectionTypes,
 	NodeOperationError,
 } from "n8n-workflow";
 
@@ -130,6 +131,8 @@ export class GraphRag implements INodeType {
 		},
 		group: ["transform"],
 		version: 1,
+		subtitle:
+			'={{ ({ question: "Retrieve Context", ingest: "Ingest Text", ingestGithub: "Ingest GitHub Repo" })[$parameter["operation"]] || $parameter["operation"] }}',
 		description:
 			"Retrieve context from or ingest data into a FalkorDB GraphRAG knowledge graph. " +
 			"Use 'Retrieve Context' to fetch ranked context documents from the graph. " +
@@ -137,7 +140,7 @@ export class GraphRag implements INodeType {
 			"Use 'Ingest GitHub Repo' to ingest all markdown files from a GitHub repository URL.",
 		defaults: { name: "FalkorDB GraphRAG Tool" },
 		inputs: [],
-		outputs: ["ai_tool"],
+		outputs: [NodeConnectionTypes.AiTool],
 		credentials: [{ name: "falkorDbGraphRagApi", required: true }],
 		properties: [
 			// ── Graph Name ───────────────────────────────────────────────────────────────
@@ -145,11 +148,11 @@ export class GraphRag implements INodeType {
 				displayName: "Graph Name",
 				name: "graphName",
 				type: "string",
-				default: "",
+				default: "n8n-graph",
 				placeholder: "e.g. knowledge_graph",
 				description:
-					"Name of the graph to operate on. Leave blank to use your default graph. On hosted FalkorDB GraphRAG, this selects among graphs owned by your API token; on self-hosted, this is the direct graph name.",
-				hint: "Optional graph identifier. Leave empty to use the server default graph.",
+					"Name of the graph to operate on. Defaults to n8n-graph. On hosted FalkorDB GraphRAG, this selects among graphs owned by your API token; on self-hosted, this is the direct graph name.",
+				hint: "Set the target graph identifier. The default is n8n-graph.",
 			},
 			// ── Operation ─────────────────────────────────────────────────────────
 			{
@@ -175,7 +178,7 @@ export class GraphRag implements INodeType {
 						name: "Ingest GitHub Repo",
 						value: "ingestGithub",
 						description: "Ingest all markdown files from a public GitHub repository URL",
-						action: "Ingest a github repository",
+						action: "Ingest a repository from GitHub",
 					},
 				],
 				default: "question",
