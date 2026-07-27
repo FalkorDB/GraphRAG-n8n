@@ -15,11 +15,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Spellcheck
-        uses: rojopolis/spellcheck-github-actions@e619e00ca22f01ade9d73048dcd6518bedc552f2 # 0.63.0
+      - uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
         with:
-          config_path: .github/spellcheck-settings.yml
-          task_name: Markdown
+          tool: just
+      - name: Install spellcheck dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pyspelling markdown
+          sudo apt-get update
+          sudo apt-get install -y aspell aspell-en
+      - name: Spellcheck
+        run: just spellcheck
 
   # Spellcheck the pull-request title with the same wordlist/dictionary. The title becomes
   # the squashed-merge commit subject (git history) and its Conventional-Commit prefix drives
@@ -32,12 +38,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Write PR title to a Markdown file
+      - uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+        with:
+          tool: just
+      - name: Install spellcheck dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pyspelling markdown
+          sudo apt-get update
+          sudo apt-get install -y aspell aspell-en
+      - name: Spellcheck PR title
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
-        run: printf '# %s\n' "$PR_TITLE" > .pr-title.md
-      - name: Spellcheck PR title
-        uses: rojopolis/spellcheck-github-actions@e619e00ca22f01ade9d73048dcd6518bedc552f2 # 0.63.0
-        with:
-          config_path: .github/spellcheck-settings.yml
-          task_name: PRTitle
+        run: just spellcheck-pr-title
