@@ -327,6 +327,161 @@ describe("GraphRagClient.listDocuments", () => {
 	});
 });
 
+// ── updateDocument ────────────────────────────────────────────────────────────
+
+describe("GraphRagClient.updateDocument", () => {
+	const client = new GraphRagClient({ serverUrl: "http://localhost:8000" });
+
+	it("PUTs multipart to /api/documents/{name} and maps the response", async () => {
+		mockFetch.mockResolvedValueOnce(
+			okJson({
+				status: "updated",
+				document: "doc.md",
+				document_id: "uploads/doc.md",
+				no_op: false,
+				nodes_created: 4,
+				relationships_created: 2,
+				chunks_indexed: 5,
+				cached_chunks: 3,
+				extracted_chunks: 2,
+			}),
+		);
+		const result = await client.updateDocument("doc.md", "new content");
+		const [url, init] = mockFetch.mock.calls[0];
+		expect(url).toBe("http://localhost:8000/api/documents/doc.md");
+		expect((init as RequestInit).method).toBe("PUT");
+		expect((init as RequestInit).body).toBeInstanceOf(FormData);
+		expect(result).toEqual({
+			status: "updated",
+			document: "doc.md",
+			documentId: "uploads/doc.md",
+			noOp: false,
+			nodesCreated: 4,
+			relationshipsCreated: 2,
+			chunksIndexed: 5,
+			cachedChunks: 3,
+			extractedChunks: 2,
+		});
+	});
+
+	it("keeps slashes as path segments and encodes each segment", async () => {
+		mockFetch.mockResolvedValueOnce(okJson({ status: "updated" }));
+		await client.updateDocument("uploads/my doc.md", "text");
+		const [url] = mockFetch.mock.calls[0];
+		expect(url).toBe("http://localhost:8000/api/documents/uploads/my%20doc.md");
+	});
+
+	it("sends upsert and disabled chunk cache as form fields", async () => {
+		mockFetch.mockResolvedValueOnce(okJson({ status: "updated" }));
+		await client.updateDocument("doc.md", "text", { upsert: true, useChunkCache: false });
+		const [, init] = mockFetch.mock.calls[0];
+		const form = (init as RequestInit).body as FormData;
+		expect(form.get("upsert")).toBe("true");
+		expect(form.get("use_chunk_cache")).toBe("false");
+	});
+
+	it("omits upsert/use_chunk_cache fields at their defaults", async () => {
+		mockFetch.mockResolvedValueOnce(okJson({ status: "updated" }));
+		await client.updateDocument("doc.md", "text");
+		const [, init] = mockFetch.mock.calls[0];
+		const form = (init as RequestInit).body as FormData;
+		expect(form.has("upsert")).toBe(false);
+		expect(form.has("use_chunk_cache")).toBe(false);
+	});
+
+	it("passes chunking options as form fields", async () => {
+		mockFetch.mockResolvedValueOnce(okJson({ status: "updated" }));
+		await client.updateDocument("doc.md", "text", {
+			chunkingStrategy: "fixed_size",
+			maxTokens: 512,
+			overlapSentences: 2,
+			chunkSize: 1500,
+			chunkOverlap: 150,
+			resolutionStrategy: "exact",
+			entityTypes: "Person,Organization",
+		});
+		const [, init] = mockFetch.mock.calls[0];
+		const form = (init as RequestInit).body as FormData;
+		expect(form.get("chunking_strategy")).toBe("fixed_size");
+		expect(form.get("max_tokens")).toBe("512");
+		expect(form.get("overlap_sentences")).toBe("2");
+		expect(form.get("chunk_size")).toBe("1500");
+		expect(form.get("chunk_overlap")).toBe("150");
+		expect(form.get("resolution_strategy")).toBe("exact");
+		expect(form.get("entity_types")).toBe("Person,Organization");
+	});
+
+	it("appends graph_name query string when configured", async () => {
+		const graphClient = new GraphRagClient({
+			serverUrl: "http://localhost:8000",
+			graphName: "n8n-kb",
+		});
+		mockFetch.mockResolvedValueOnce(okJson({ status: "updated" }));
+		await graphClient.updateDocument("doc.md", "text");
+		const [url] = mockFetch.mock.calls[0];
+		expect(url).toBe("http://localhost:8000/api/documents/doc.md?graph_name=n8n-kb");
+	});
+
+	it("reports a no-op update", async () => {
+		mockFetch.mockResolvedValueOnce(okJson({ status: "no_op", no_op: true }));
+		const result = await client.updateDocument("doc.md", "same content");
+		expect(result.noOp).toBe(true);
+		expect(result.status).toBe("no_op");
+	});
+
+	it("surfaces server detail on error", async () => {
+		mockFetch.mockResolvedValueOnce(
+			errorResponse(404, JSON.stringify({ detail: "No document named 'doc.md' found" })),
+		);
+		await expect(client.updateDocument("doc.md", "text")).rejects.toThrow(
+			"No document named 'doc.md' found",
+		);
+	});
+
+	it("falls back to a generic message on non-ok response without detail", async () => {
+		mockFetch.mockResolvedValueOnce(errorResponse(500));
+		await expect(client.updateDocument("doc.md", "text")).rejects.toThrow(
+			"Update document failed (HTTP 500). Server error.",
+		);
+	});
+});
+
+// ── deleteDocument ────────────────────────────────────────────────────────────
+
+describe("GraphRagClient.deleteDocument", () => {
+	const client = new GraphRagClient({ serverUrl: "http://localhost:8000" });
+
+	it("DELETEs /api/documents/{id} with the confirm header", async () => {
+		mockFetch.mockResolvedValueOnce(okJson({ status: "deleted" }));
+		const result = await client.deleteDocument("uploads/doc.md");
+		const [url, init] = mockFetch.mock.calls[0];
+		expect(url).toBe("http://localhost:8000/api/documents/uploads/doc.md");
+		expect((init as RequestInit).method).toBe("DELETE");
+		expect((init as RequestInit).headers).toMatchObject({ "X-Confirm-Delete": "true" });
+		expect(result).toEqual({ status: "deleted", documentId: "uploads/doc.md" });
+	});
+
+	it("defaults status when the body is not JSON", async () => {
+		mockFetch.mockResolvedValueOnce({
+			ok: true,
+			status: 200,
+			json: async () => {
+				throw new Error("empty");
+			},
+			text: async () => "",
+		} as unknown as Response);
+		const result = await client.deleteDocument("doc.md");
+		expect(result.status).toBe("deleted");
+	});
+
+	it("throws on non-ok response", async () => {
+		mockFetch.mockResolvedValueOnce(errorResponse(404, "nope"));
+		await expect(client.deleteDocument("missing.md")).rejects.toThrow(
+			"Delete document failed (404 Not Found). Check server URL and graph name.",
+		);
+	});
+});
+
 // ── ingestGithub ──────────────────────────────────────────────────────────────
 
 describe("GraphRagClient.ingestGithub", () => {

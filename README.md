@@ -45,7 +45,7 @@ GraphRAG-Server handles ingestion, entity extraction, embedding, and retrieval.
 ## Features
 
 - **Pipeline operations** — **Ask Question**, **Ingest Text**, **Ingest GitHub Repo**,
-  and **List Documents**.
+  **List Documents**, **Update Document**, and **Delete Document**.
 - **AI Agent tool operations** — **Retrieve Context**, **Ingest Text**, and
   **Ingest GitHub Repo**.
 
@@ -167,8 +167,9 @@ No manual wiring of input data is needed.
 
 ### Operations reference
 
-The **pipeline node** exposes four operations: **Ask Question**, **Ingest Text**,
-**Ingest GitHub Repo**, and **List Documents**.
+The **pipeline node** exposes six operations: **Ask Question**, **Ingest Text**,
+**Ingest GitHub Repo**, **List Documents**, **Update Document**, and
+**Delete Document**.
 
 The **AI Agent tool node** exposes three operations: **Retrieve Context**,
 **Ingest Text**, and **Ingest GitHub Repo**.
@@ -227,10 +228,45 @@ Returns a list of all documents that have been ingested into the knowledge graph
 
 **Output** — `{ documents: [...], count }`
 
+#### Update Document
+
+Updates a previously-ingested document in place. The server diffs the new content
+against the stored version chunk by chunk — unchanged chunks are reused from the
+graph at zero LLM cost, and only changed chunks are re-extracted. Sending identical
+content short-circuits to a no-op. Requires GraphRAG-Server with the
+`PUT /api/documents/{name}` endpoint.
+
+| Parameter | Description | Default |
+| --- | --- | --- |
+| **Document Name** | Display name (or ID) of the document to update, as shown by List Documents. | — |
+| **Document Text** | The complete new content — always the full document, not a partial diff. | — |
+| **Upsert** | Ingest as a new document when the name is unknown, instead of failing. | off |
+| **Use Chunk Cache** | Reuse graph data for unchanged chunks. Disable to force full re-extraction. | on |
+| **Graph Name** | Named graph to update. This value defaults to `n8n-graph`. | `n8n-graph` |
+| **Advanced Options** | Reveal chunking and extraction controls (see below). | off |
+
+**Output** — `{ status, document, documentId, noOp, nodesCreated, relationshipsCreated, chunksIndexed, cachedChunks, extractedChunks }`
+
+See [`workflows/10_action_github_sync.json`](workflows/10_action_github_sync.json)
+for a complete GitHub-push-to-knowledge-graph sync built on this operation.
+
+#### Delete Document
+
+Removes an ingested document from the knowledge graph, together with its chunks and
+any entities that are no longer referenced by other documents. This operation is
+destructive — the document must be re-ingested to restore it.
+
+| Parameter | Description | Default |
+| --- | --- | --- |
+| **Document ID** | ID of the document to delete, as returned by List Documents. | — |
+| **Graph Name** | Named graph to delete from. This value defaults to `n8n-graph`. | `n8n-graph` |
+
+**Output** — `{ status, documentId }`
+
 ### Advanced ingest options
 
-Toggle **Advanced Options** on the Ingest Text or Ingest GitHub Repo operations to
-reveal these controls:
+Toggle **Advanced Options** on the Ingest Text, Ingest GitHub Repo, or
+Update Document operations to reveal these controls:
 
 | Option | Description | Default |
 | --- | --- | --- |
@@ -247,10 +283,11 @@ reveal these controls:
 Import any file from [`workflows/`](workflows) via **Workflows → Import from File**
 in n8n.
 
-After importing, update the credential references: pipeline examples (`01`–`05`)
-need the **FalkorDB GraphRAG Server API** credential, and the AI Agent tool examples
+After importing, update the credential references: pipeline examples (`01`–`05`, `10`)
+need the **FalkorDB GraphRAG Server API** credential, the AI Agent tool examples
 (`06`–`09`) also need an **AI model** credential (e.g. OpenAI) attached to the
-Agent node.
+Agent node, and the GitHub sync example (`10`) additionally needs a **GitHub**
+credential on its trigger.
 
 | File | Node style | Operation |
 | --- | --- | --- |
@@ -263,6 +300,7 @@ Agent node.
 | [`07_tool_ingest_github.json`](workflows/07_tool_ingest_github.json) | AI Agent tool | Ingest GitHub Repo |
 | [`08_tool_list_documents.json`](workflows/08_tool_list_documents.json) | AI Agent tool | Retrieve Context |
 | [`09_tool_ask_question.json`](workflows/09_tool_ask_question.json) | AI Agent tool | Ask Question |
+| [`10_action_github_sync.json`](workflows/10_action_github_sync.json) | Pipeline | Update Document + List Documents (GitHub push sync) |
 
 ## Contributing
 

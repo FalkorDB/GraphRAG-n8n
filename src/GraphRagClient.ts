@@ -9,6 +9,10 @@
  *
  * Supported query modes:
  *   - Ask question   : POST /api/query  (strategy: local | multi_path | auto)
+ *
+ * Document management:
+ *   - Update document: PUT    /api/documents/{name}  (multipart, in-place diff update)
+ *   - Delete document: DELETE /api/documents/{id}    (requires X-Confirm-Delete header)
  */
 
 export interface GraphRagConfig {
@@ -49,6 +53,23 @@ export interface IngestGithubResult {
 	finalized: boolean;
 }
 
+export interface UpdateDocumentResult {
+	status: string;
+	document: string;
+	documentId: string;
+	noOp: boolean;
+	nodesCreated: number;
+	relationshipsCreated: number;
+	chunksIndexed: number;
+	cachedChunks: number;
+	extractedChunks: number;
+}
+
+export interface DeleteDocumentResult {
+	status: string;
+	documentId: string;
+}
+
 // ── Ingest options ────────────────────────────────────────────────────────────
 
 export interface IngestOptions {
@@ -70,6 +91,15 @@ export interface IngestOptions {
 	entityTypes?: string;
 	/** Skip server finalization. Useful when batching many ingests before one finalize call. */
 	skipFinalize?: boolean;
+}
+
+// ── Update options ────────────────────────────────────────────────────────────
+
+export interface UpdateDocumentOptions extends IngestOptions {
+	/** Ingest as a new document when the name is unknown (default false → 404). */
+	upsert?: boolean;
+	/** Reuse graph data for unchanged chunks — only changed chunks hit the LLM (default true). */
+	useChunkCache?: boolean;
 }
 
 // ── Query options ─────────────────────────────────────────────────────────────
@@ -427,6 +457,89 @@ export class GraphRagClient {
 			entityCount: d.entity_count,
 			relationCount: d.relation_count,
 		}));
+	}
+
+	// ── Update document (in-place) ───────────────────────────────────────────
+
+	/**
+	 * Update a previously-ingested document in place via PUT /api/documents/{name}.
+	 * The server diffs chunk hashes: unchanged chunks are reused from the graph
+	 * (zero LLM calls), only changed chunks are re-extracted. Identical content
+	 * short-circuits to a no-op.
+	 */
+	async updateDocument(
+		documentName: string,
+		text: string,
+		opts: UpdateDocumentOptions = {},
+	): Promise<UpdateDocumentResult> {
+		const form = new FormData();
+		form.append("file", new Blob([text], { type: "text/plain" }), documentName);
+		if (opts.chunkingStrategy) form.append("chunking_strategy", opts.chunkingStrategy);
+		if (opts.maxTokens !== undefined) form.append("max_tokens", String(opts.maxTokens));
+		if (opts.overlapSentences !== undefined)
+			form.append("overlap_sentences", String(opts.overlapSentences));
+		if (opts.chunkSize !== undefined) form.append("chunk_size", String(opts.chunkSize));
+		if (opts.chunkOverlap !== undefined) form.append("chunk_overlap", String(opts.chunkOverlap));
+		if (opts.resolutionStrategy) form.append("resolution_strategy", opts.resolutionStrategy);
+		if (opts.entityTypes) form.append("entity_types", opts.entityTypes);
+		if (opts.upsert) form.append("upsert", "true");
+		if (opts.useChunkCache === false) form.append("use_chunk_cache", "false");
+
+		// Encode per segment: server routes use {doc_name:path}, slashes must stay literal.
+		const encodedName = documentName.split("/").map(encodeURIComponent).join("/");
+		const res = await this.fetchWithTimeout(
+			`${this.base}/api/documents/${encodedName}${this.qs()}`,
+			{
+				method: "PUT",
+				headers: this.multipartHeaders(),
+				body: form,
+			},
+		);
+		if (!res.ok) throw await this.httpError("Update document", res);
+		const data = (await res.json()) as {
+			status?: string;
+			document?: string;
+			document_id?: string;
+			no_op?: boolean;
+			nodes_created?: number;
+			relationships_created?: number;
+			chunks_indexed?: number;
+			cached_chunks?: number;
+			extracted_chunks?: number;
+		};
+		return {
+			status: data.status ?? "updated",
+			document: data.document ?? documentName,
+			documentId: data.document_id ?? documentName,
+			noOp: data.no_op ?? false,
+			nodesCreated: data.nodes_created ?? 0,
+			relationshipsCreated: data.relationships_created ?? 0,
+			chunksIndexed: data.chunks_indexed ?? 0,
+			cachedChunks: data.cached_chunks ?? 0,
+			extractedChunks: data.extracted_chunks ?? 0,
+		};
+	}
+
+	// ── Delete document ──────────────────────────────────────────────────────
+
+	/**
+	 * Delete an ingested document (and its now-orphaned chunks/entities) via
+	 * DELETE /api/documents/{id}. Sends the X-Confirm-Delete header the server
+	 * requires for destructive operations.
+	 */
+	async deleteDocument(documentId: string): Promise<DeleteDocumentResult> {
+		const encodedId = documentId.split("/").map(encodeURIComponent).join("/");
+		const res = await this.fetchWithTimeout(`${this.base}/api/documents/${encodedId}${this.qs()}`, {
+			method: "DELETE",
+			headers: {
+				"X-Requested-With": "XMLHttpRequest",
+				"X-Confirm-Delete": "true",
+				...this.authHeader,
+			},
+		});
+		if (!res.ok) throw await this.httpError("Delete document", res);
+		const data = (await res.json().catch(() => ({}))) as { status?: string };
+		return { status: data.status ?? "deleted", documentId };
 	}
 
 	private _extractDocumentsFromContext(data: {
