@@ -327,7 +327,7 @@ Run `just --list` to see all available recipes. The most useful ones:
 | `just done` | Definition-of-done: `ci` + `coverage` + `spellcheck`. Run before opening a PR. |
 | `just fmt` / `just fmt-check` | Auto-format with Prettier / check formatting only. |
 | `just lint` / `just lintfix` | Lint with `eslint-plugin-n8n-nodes-base` / auto-fix. |
-| `just build` | Compile TypeScript to `dist/` and copy node icons. |
+| `just build` | Compile TypeScript to `dist/` and copy node + credential icons. |
 | `just test` | Run Vitest once. |
 | `just coverage` | Run Vitest with V8 coverage (matches the CI coverage job). |
 | `just spellcheck` | Spellcheck Markdown docs with `pyspelling` + `aspell`. |

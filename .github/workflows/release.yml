@@ -28,7 +28,7 @@ jobs:
             echo "Error: Tag '${GITHUB_REF_NAME}' does not produce a valid semver version ('${VERSION}'). Expected format: v1.2.3"
             exit 1
           fi
-          npm version "$VERSION" --no-git-tag-version
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
       - run: npm run build --if-present
 
       - run: npm publish --provenance --access public 

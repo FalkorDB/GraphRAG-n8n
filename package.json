@@ -1,6 +1,6 @@
 {
   "name": "@falkordb/n8n-nodes-graphrag",
-  "version": "0.0.0-dev",
+  "version": "0.2.4",
   "description": "n8n community node — wraps the FalkorDB GraphRAG-Server REST API for knowledge-graph ingestion and retrieval.",
   "keywords": [
     "n8n-community-node-package",
@@ -33,8 +33,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "files": [
-    "dist",
-    "graphrag_runner.py"
+    "dist"
   ],
   "n8n": {
     "n8nNodesApiVersion": 1,

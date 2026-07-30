@@ -192,7 +192,9 @@ export class GraphRagClient {
 		try {
 			const parsed = JSON.parse(body) as { detail?: unknown };
 			if (typeof parsed.detail === "string" && parsed.detail.trim()) return parsed.detail;
-		} catch {}
+		} catch {
+			// non-JSON response — fall through to undefined so the caller uses the fallback message
+		}
 		return undefined;
 	}
 

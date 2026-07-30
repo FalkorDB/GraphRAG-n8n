@@ -29,7 +29,7 @@ invocation), so `just` and `npm run` never drift.
 | `just done` | Definition-of-done gate: `ci` **plus** `coverage` and `spellcheck`. |
 | `just fmt` / `just fmt-check` | Format with Prettier / check formatting. |
 | `just lint` / `just lintfix` | Lint with the n8n-nodes-base rules / auto-fix. |
-| `just build` | Compile to `dist/` and copy node icons. |
+| `just build` | Compile to `dist/` and copy node + credential icons. |
 | `just test` / `just test-one <filter>` | Run Vitest once / a single file or name. |
 | `just coverage` | V8 coverage report (matches the `check-coverage` CI job). |
 | `just spellcheck` | Spellcheck the Markdown docs. |

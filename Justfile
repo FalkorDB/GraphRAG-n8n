@@ -44,10 +44,10 @@ lintfix:
 
 # === Build ===================================================================
 
-# Compile TypeScript to dist/ and copy node icons. This is also what
-# `prepublishOnly` runs, so it validates the published artifact.
+# Compile TypeScript to dist/ and copy node + credential icons. This is also
+# what `prepublishOnly` runs, so it validates the published artifact.
 
-# Compile TypeScript to dist/ and copy node icons (CI gate).
+# Compile TypeScript to dist/ and copy node + credential icons (CI gate).
 build:
     npm run build
 

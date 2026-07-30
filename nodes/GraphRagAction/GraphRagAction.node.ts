@@ -124,8 +124,8 @@ export class GraphRagAction implements INodeType {
 		displayName: "FalkorDB GraphRAG",
 		name: "graphRagAction",
 		icon: {
-			light: "file:../../public/F-light.svg",
-			dark: "file:../../public/F-dark.svg",
+			light: "file:F-light.svg",
+			dark: "file:F-dark.svg",
 		},
 		group: ["transform"],
 		version: 1,
