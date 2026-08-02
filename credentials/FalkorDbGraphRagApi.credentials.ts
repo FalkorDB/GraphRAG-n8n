@@ -4,9 +4,12 @@ export class FalkorDbGraphRagApi implements ICredentialType {
 	name = "falkorDbGraphRagApi";
 	displayName = "FalkorDB GraphRAG Server API";
 	documentationUrl = "https://github.com/FalkorDB/GraphRAG-Server";
+	// n8n requires credentials to declare an icon. Point at the node's copy rather
+	// than duplicating the files: the path resolves the same way from the source
+	// tree and from dist/, since dist mirrors the source layout.
 	icon: Icon = {
-		light: "file:F-light.svg",
-		dark: "file:F-dark.svg",
+		light: "file:../nodes/GraphRagAction/F.svg",
+		dark: "file:../nodes/GraphRagAction/F.dark.svg",
 	};
 
 	properties: INodeProperties[] = [

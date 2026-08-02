@@ -46,8 +46,9 @@ GraphRAG-Server handles ingestion, entity extraction, embedding, and retrieval.
 
 - **Pipeline operations** — **Ask Question**, **Ingest Text**, **Ingest GitHub Repo**,
   **List Documents**, **Update Document**, and **Delete Document**.
-- **AI Agent tool operations** — **Retrieve Context**, **Ingest Text**, and
-  **Ingest GitHub Repo**.
+- **Same operations as an AI Agent tool** — the node is marked `usableAsTool`, so n8n
+  automatically publishes a **FalkorDB GraphRAG Tool** variant with every operation
+  available.
 
 - **Named graph targeting** — every operation includes a **Graph Name** field so you
   can target a specific FalkorDB graph. It defaults to `n8n-graph`.
@@ -60,8 +61,8 @@ GraphRAG-Server handles ingestion, entity extraction, embedding, and retrieval.
 - **Retriever/generator split support** — set **Ask Question** to **Retrieve Only**
   to retrieve context in FalkorDB and generate the final answer in your own n8n
   chat model.
-- **AI Agent-ready** — the Tool node pre-fills parameters with `$fromAI()`
-  expressions so the LLM can fill them from the conversation automatically.
+- **AI Agent-ready** — the tool variant accepts `$fromAI()` expressions so the LLM
+  can fill parameters from the conversation automatically.
 - **Ten importable example workflows** covering all operations and end-to-end
   patterns (see [`workflows/`](workflows)).
 
@@ -91,8 +92,9 @@ returns the structured JSON response as n8n item data.
 
 1. Open n8n, go to **Settings → Community Nodes → Install**.
 2. Enter the package name `@falkordb/n8n-nodes-graphrag` and confirm.
-3. After installation the **FalkorDB GraphRAG** and **FalkorDB GraphRAG Tool**
-   nodes appear in the node panel under the _FalkorDB_ category.
+3. After installation the **FalkorDB GraphRAG** node appears in the node panel
+   under the _FalkorDB_ category, and n8n also lists a **FalkorDB GraphRAG Tool**
+   variant under _Tools_ for use with AI Agents.
 
 ### Manually (self-hosted)
 
@@ -106,7 +108,8 @@ Restart n8n after installation. For more details see the n8n docs on
 
 ## Credentials
 
-Both nodes share a single credential type — **FalkorDB GraphRAG Server API**:
+The node and its derived Tool variant share a single credential type —
+**FalkorDB GraphRAG Server API**:
 
 | Field | Required | Description |
 | --- | --- | --- |
@@ -115,8 +118,8 @@ Both nodes share a single credential type — **FalkorDB GraphRAG Server API**:
 | **Request Timeout (Seconds)** | yes | Per-request timeout. Requests abort when this limit is reached. |
 
 Create the credential once under **Credentials → New → FalkorDB GraphRAG Server API**
-and reuse it across all nodes. Leave **API Token** blank only when your server
-does not require authentication.
+and reuse it everywhere the node is used. Leave **API Token** blank only when your
+server does not require authentication.
 
 ## Usage
 
@@ -126,6 +129,9 @@ The **FalkorDB GraphRAG** node fits into any regular workflow. It receives items
 on its `main` input, executes the chosen operation for each item, and passes results
 to the `main` output. Use it to ingest documents as part of a data pipeline, run
 scheduled question-answering jobs, or check the ingestion queue.
+
+Pick a **Resource** first — **Knowledge Graph** to query, or **Document** to manage
+what has been ingested — then the **Operation** within it.
 
 For **Ask Question**, choose a retrieval strategy and response mode:
 
@@ -154,10 +160,11 @@ and [`workflows/05_action_retrieve_only.json`](workflows/05_action_retrieve_only
 
 ### AI Agent tool — FalkorDB GraphRAG Tool
 
-The **FalkorDB GraphRAG Tool** node connects to an **AI Agent** node's `ai_tool`
-input. The agent decides when to call it, and its parameters are pre-filled with
-`$fromAI()` expressions so the LLM fills them from the conversation automatically.
-No manual wiring of input data is needed.
+The package ships a single node. Because it declares `usableAsTool: true`, n8n
+automatically derives a **FalkorDB GraphRAG Tool** variant that connects to an
+**AI Agent** node's `ai_tool` input. It offers the same six operations, and its
+parameters accept `$fromAI()` expressions so the LLM fills them from the
+conversation automatically.
 
 ```
 [Chat Trigger] ──▶ [AI Agent] ──ai_tool──▶ [FalkorDB GraphRAG Tool]
@@ -167,14 +174,18 @@ No manual wiring of input data is needed.
 
 ### Operations reference
 
-The **pipeline node** exposes six operations: **Ask Question**, **Ingest Text**,
-**Ingest GitHub Repo**, **List Documents**, **Update Document**, and
-**Delete Document**.
+The node exposes six operations, grouped under two **Resource** values so the n8n
+node panel lists them in sections:
 
-The **AI Agent tool node** exposes three operations: **Retrieve Context**,
-**Ingest Text**, and **Ingest GitHub Repo**.
+| Resource | Operations |
+| --- | --- |
+| **Knowledge Graph** | Ask Question |
+| **Document** | Ingest Text, Ingest GitHub Repo, List Documents, Update Document, Delete Document |
 
-Both nodes include **Graph Name** and default it to `n8n-graph`.
+The tool variant exposes the same set, plus a **Tool Description** field that n8n
+adds automatically.
+
+Every operation includes **Graph Name** and defaults it to `n8n-graph`.
 
 #### Ask Question
 
@@ -298,7 +309,7 @@ credential on its trigger.
 | [`05_action_retrieve_only.json`](workflows/05_action_retrieve_only.json) | Pipeline | Retrieve Only |
 | [`06_tool_ingest_text.json`](workflows/06_tool_ingest_text.json) | AI Agent tool | Ingest Text |
 | [`07_tool_ingest_github.json`](workflows/07_tool_ingest_github.json) | AI Agent tool | Ingest GitHub Repo |
-| [`08_tool_list_documents.json`](workflows/08_tool_list_documents.json) | AI Agent tool | Retrieve Context |
+| [`08_tool_list_documents.json`](workflows/08_tool_list_documents.json) | AI Agent tool | List Documents |
 | [`09_tool_ask_question.json`](workflows/09_tool_ask_question.json) | AI Agent tool | Ask Question |
 | [`10_action_github_sync.json`](workflows/10_action_github_sync.json) | Pipeline | Update Document + List Documents (GitHub push sync) |
 

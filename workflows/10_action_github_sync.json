@@ -97,6 +97,7 @@
     },
     {
       "parameters": {
+        "resource": "document",
         "operation": "updateDocument",
         "updateDocumentName": "={{ $('Changed Markdown Files').item.json.name }}",
         "updateDocumentText": "={{ $json.content }}",
@@ -120,6 +121,7 @@
     },
     {
       "parameters": {
+        "resource": "document",
         "operation": "listDocuments",
         "graphName": "knowledge-graph"
       },

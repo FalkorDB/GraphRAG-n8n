@@ -21,7 +21,7 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && gulp build:icons",
+    "build": "tsc && node scripts/copy-icons.mjs",
     "dev": "tsc --watch",
     "format": "prettier --write \"{nodes,credentials,src,tests}/**/*.ts\" index.ts",
     "format:check": "prettier --check \"{nodes,credentials,src,tests}/**/*.ts\" index.ts",
@@ -41,7 +41,6 @@
       "dist/credentials/FalkorDbGraphRagApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/GraphRag/GraphRag.node.js",
       "dist/nodes/GraphRagAction/GraphRagAction.node.js"
     ]
   },
@@ -51,7 +50,6 @@
     "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^8.57.1",
     "eslint-plugin-n8n-nodes-base": "^1.16.3",
-    "gulp": "^5.0.1",
     "n8n-workflow": "*",
     "prettier": "^3.3.2",
     "typescript": "^6.0.3",

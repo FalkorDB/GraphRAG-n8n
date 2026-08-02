@@ -65,14 +65,13 @@
     },
     {
       "parameters": {
-        "operation": "question",
-        "questionText": "={{ $fromAI(\"question\", \"Natural-language question used to retrieve context from the knowledge graph\") }}",
-        "queryStrategy": "local",
+        "resource": "document",
+        "operation": "listDocuments",
         "graphName": "knowledge-graph"
       },
       "id": "rag-tool",
       "name": "FalkorDB GraphRAG Tool",
-      "type": "@falkordb/n8n-nodes-graphrag.graphRag",
+      "type": "@falkordb/n8n-nodes-graphrag.graphRagActionTool",
       "typeVersion": 1,
       "position": [
         820,

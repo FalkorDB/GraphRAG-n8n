@@ -1,4 +1,4 @@
-# Justfile — dev-cycle automation for n8n-nodes-falkordb-graphrag.
+# Justfile — dev-cycle automation for @falkordb/n8n-nodes-graphrag.
 #
 # Run `just` (or `just --list`) to see every available recipe.
 #

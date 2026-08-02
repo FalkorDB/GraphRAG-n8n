@@ -124,8 +124,8 @@ export class GraphRagAction implements INodeType {
 		displayName: "FalkorDB GraphRAG",
 		name: "graphRagAction",
 		icon: {
-			light: "file:F-light.svg",
-			dark: "file:F-dark.svg",
+			light: "file:F.svg",
+			dark: "file:F.dark.svg",
 		},
 		group: ["transform"],
 		version: 1,
@@ -141,11 +141,31 @@ export class GraphRagAction implements INodeType {
 			"Use 'Delete Document' to remove one. " +
 			"Connects directly in a pipeline (main input/output).",
 		defaults: { name: "FalkorDB GraphRAG" },
+		usableAsTool: true,
 		inputs: [NodeConnectionTypes.Main],
 		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: "falkorDbGraphRagApi", required: true }],
-		usableAsTool: true,
 		properties: [
+			{
+				displayName: "Resource",
+				name: "resource",
+				type: "options",
+				noDataExpression: true,
+				options: [
+					{
+						name: "Document",
+						value: "document",
+						description: "Add, refresh, list, or remove the source documents behind the graph",
+					},
+					{
+						name: "Knowledge Graph",
+						value: "knowledgeGraph",
+						description: "Query the knowledge graph built from your ingested documents",
+					},
+				],
+				default: "knowledgeGraph",
+				hint: "Groups the actions: query the graph, or manage the documents behind it.",
+			},
 			{
 				displayName: "Graph Name",
 				name: "graphName",
@@ -161,6 +181,7 @@ export class GraphRagAction implements INodeType {
 				name: "operation",
 				type: "options",
 				noDataExpression: true,
+				displayOptions: { show: { resource: ["knowledgeGraph"] } },
 				options: [
 					{
 						name: "Ask Question",
@@ -169,6 +190,17 @@ export class GraphRagAction implements INodeType {
 							"Ask a natural-language question; the server answers from its knowledge graph",
 						action: "Ask a question to the knowledge graph",
 					},
+				],
+				default: "question",
+				hint: "Ask the knowledge graph a natural-language question.",
+			},
+			{
+				displayName: "Operation",
+				name: "operation",
+				type: "options",
+				noDataExpression: true,
+				displayOptions: { show: { resource: ["document"] } },
+				options: [
 					{
 						name: "Delete Document",
 						value: "deleteDocument",
@@ -201,8 +233,8 @@ export class GraphRagAction implements INodeType {
 						action: "Update an ingested document",
 					},
 				],
-				default: "question",
-				hint: "Choose whether to ask questions, ingest content, or list documents.",
+				default: "ingest",
+				hint: "Choose how to add, refresh, list, or remove ingested documents.",
 			},
 
 			// ── Ask Question ──────────────────────────────────────────────────────

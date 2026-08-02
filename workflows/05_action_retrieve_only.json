@@ -27,6 +27,7 @@
     },
     {
       "parameters": {
+        "resource": "knowledgeGraph",
         "operation": "question",
         "questionText": "={{ $json.question }}",
         "responseMode": "retrieveOnly",

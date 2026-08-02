@@ -65,14 +65,16 @@
     },
     {
       "parameters": {
+        "resource": "knowledgeGraph",
         "operation": "question",
         "questionText": "={{ $fromAI(\"question\", \"Natural-language question to ask the knowledge graph\") }}",
+        "responseMode": "answer",
         "queryStrategy": "local",
         "graphName": "knowledge-graph"
       },
       "id": "rag-tool",
       "name": "FalkorDB GraphRAG Tool",
-      "type": "@falkordb/n8n-nodes-graphrag.graphRag",
+      "type": "@falkordb/n8n-nodes-graphrag.graphRagActionTool",
       "typeVersion": 1,
       "position": [
         820,

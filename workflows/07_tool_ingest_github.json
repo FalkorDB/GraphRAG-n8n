@@ -65,6 +65,7 @@
     },
     {
       "parameters": {
+        "resource": "document",
         "operation": "ingestGithub",
         "githubUrl": "={{ $fromAI(\"githubUrl\", \"Full GitHub repository URL to ingest, e.g. https://github.com/org/repo\") }}",
         "githubRef": "={{ $fromAI(\"githubRef\", \"Branch, tag, or commit SHA. Leave empty for default branch.\") }}",
@@ -72,7 +73,7 @@
       },
       "id": "rag-tool",
       "name": "FalkorDB GraphRAG Tool",
-      "type": "@falkordb/n8n-nodes-graphrag.graphRag",
+      "type": "@falkordb/n8n-nodes-graphrag.graphRagActionTool",
       "typeVersion": 1,
       "position": [
         820,
