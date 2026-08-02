@@ -146,13 +146,10 @@ describe("GraphRagAction — ingest operation", () => {
 			documentName: "report.pdf",
 			showAdvanced: false,
 		});
-		(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer = vi
-			.fn()
-			.mockResolvedValue(Buffer.from("pdf"));
+		const getBinaryDataBuffer = vi.fn().mockResolvedValue(Buffer.from("pdf"));
+		Object.assign(ctx.helpers, { getBinaryDataBuffer });
 		await node.execute.call(ctx as unknown as IExecuteFunctions);
-		expect(
-			(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer,
-		).toHaveBeenCalledWith(0, "file");
+		expect(getBinaryDataBuffer).toHaveBeenCalledWith(0, "file");
 		expect(mockIngestBuffer).toHaveBeenCalledWith(expect.any(Uint8Array), "report.pdf", {});
 	});
 
