@@ -1,5 +1,5 @@
 {
-  "name": "08 — Tool: Retrieve Context",
+  "name": "08 — Tool: List Documents",
   "nodes": [
     {
       "parameters": {},
@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{ json: { chatInput: \"Retrieve context about the key topics in the knowledge graph.\" } }];"
+        "jsCode": "return [{ json: { chatInput: \"Which documents have been ingested into the knowledge graph so far?\" } }];"
       },
       "id": "set-input",
       "name": "Set Message",
@@ -28,7 +28,7 @@
     {
       "parameters": {
         "options": {
-          "systemMessage": "You are a knowledge graph assistant. Use the FalkorDB GraphRAG tool to retrieve relevant context from the knowledge graph before answering."
+          "systemMessage": "You are a knowledge graph assistant. Use the FalkorDB GraphRAG tool to list the documents that have been ingested into the knowledge graph, then summarise the inventory for the user."
         }
       },
       "id": "ai-agent",

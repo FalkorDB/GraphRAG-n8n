@@ -22,6 +22,21 @@ jobs:
         run: npm install -g npm@11.5.1
       - run: npm ci
 
+      # Guard against publishing a version that does not match the release tag.
+      # release-please bumps package.json and tags the same commit, so a
+      # mismatch means the release was cut by hand and is almost certainly wrong.
+      - name: Verify package version matches release tag
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          PKG_VERSION="$(node -p 'require("./package.json").version')"
+          TAG_VERSION="${RELEASE_TAG#v}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::package.json version ($PKG_VERSION) does not match release tag ($RELEASE_TAG)."
+            exit 1
+          fi
+          echo "Publishing $PKG_VERSION from tag $RELEASE_TAG"
+
       - run: npm run build --if-present
 
       - run: npm publish --provenance --access public
