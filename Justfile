@@ -1,4 +1,4 @@
-# Justfile — dev-cycle automation for n8n-nodes-falkordb-graphrag.
+# Justfile — dev-cycle automation for @falkordb/n8n-nodes-graphrag.
 #
 # Run `just` (or `just --list`) to see every available recipe.
 #
@@ -44,10 +44,10 @@ lintfix:
 
 # === Build ===================================================================
 
-# Compile TypeScript to dist/ and copy node icons. This is also what
-# `prepublishOnly` runs, so it validates the published artifact.
+# Compile TypeScript to dist/ and copy node + credential icons. This is also
+# what `prepublishOnly` runs, so it validates the published artifact.
 
-# Compile TypeScript to dist/ and copy node icons (CI gate).
+# Compile TypeScript to dist/ and copy node + credential icons (CI gate).
 build:
     npm run build
 

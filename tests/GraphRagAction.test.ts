@@ -146,13 +146,10 @@ describe("GraphRagAction — ingest operation", () => {
 			documentName: "report.pdf",
 			showAdvanced: false,
 		});
-		(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer = vi
-			.fn()
-			.mockResolvedValue(Buffer.from("pdf"));
+		const getBinaryDataBuffer = vi.fn().mockResolvedValue(Buffer.from("pdf"));
+		Object.assign(ctx.helpers, { getBinaryDataBuffer });
 		await node.execute.call(ctx as unknown as IExecuteFunctions);
-		expect(
-			(ctx.helpers as { getBinaryDataBuffer: ReturnType<typeof vi.fn> }).getBinaryDataBuffer,
-		).toHaveBeenCalledWith(0, "file");
+		expect(getBinaryDataBuffer).toHaveBeenCalledWith(0, "file");
 		expect(mockIngestBuffer).toHaveBeenCalledWith(expect.any(Uint8Array), "report.pdf", {});
 	});
 
@@ -401,10 +398,9 @@ describe("GraphRagAction node description", () => {
 	});
 
 	it("exposes all 6 operations", () => {
-		const opProp = node.description.properties.find(
-			(p: { name: string }) => p.name === "operation",
-		);
-		const values = ((opProp?.options ?? []) as Array<{ value: string }>).map((o) => o.value);
+		const values = node.description.properties
+			.filter((p: { name: string }) => p.name === "operation")
+			.flatMap((p) => ((p.options ?? []) as Array<{ value: string }>).map((o) => o.value));
 		expect(values).toEqual(
 			expect.arrayContaining([
 				"question",
@@ -415,5 +411,33 @@ describe("GraphRagAction node description", () => {
 				"deleteDocument",
 			]),
 		);
+	});
+
+	it("groups operations under a resource so the node panel splits them into sections", () => {
+		const resourceProp = node.description.properties.find(
+			(p: { name: string }) => p.name === "resource",
+		);
+		const resources = ((resourceProp?.options ?? []) as Array<{ value: string }>).map(
+			(o) => o.value,
+		);
+		expect(resources).toEqual(expect.arrayContaining(["knowledgeGraph", "document"]));
+
+		// Every Operation property must be scoped to exactly one resource, otherwise the
+		// panel would render an ungrouped list or show duplicate operation dropdowns.
+		const opsByResource = node.description.properties
+			.filter((p: { name: string }) => p.name === "operation")
+			.map((p) => {
+				const shown = p.displayOptions?.show?.resource as string[] | undefined;
+				expect(shown).toHaveLength(1);
+				return [
+					shown?.[0],
+					((p.options ?? []) as Array<{ value: string }>).map((o) => o.value),
+				] as const;
+			});
+
+		expect(Object.fromEntries(opsByResource)).toEqual({
+			knowledgeGraph: ["question"],
+			document: ["deleteDocument", "ingestGithub", "ingest", "listDocuments", "updateDocument"],
+		});
 	});
 });

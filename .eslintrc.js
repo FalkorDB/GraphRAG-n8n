@@ -22,7 +22,6 @@ module.exports = {
 	ignorePatterns: [
 		'.eslintrc.js',
 		'eslint.config.*',
-		'gulpfile.js',
 		'jest.config.js',
 		'**/*.js',
 		'node_modules/**',
@@ -61,9 +60,9 @@ module.exports = {
 			},
 		},
 		{
-			// Both GraphRag nodes use connection enums that trip the regular-node
-			// description rules. Keep the disable scoped to these files only.
-			files: ['./nodes/GraphRag/GraphRag.node.ts', './nodes/GraphRagAction/GraphRagAction.node.ts'],
+			// The node declares its connections with the NodeConnectionTypes enum, which
+			// these rules cannot statically resolve. Keep the disable scoped to this file.
+			files: ['./nodes/GraphRagAction/GraphRagAction.node.ts'],
 			plugins: ['eslint-plugin-n8n-nodes-base'],
 			rules: {
 				'n8n-nodes-base/node-class-description-inputs-wrong-regular-node': 'off',

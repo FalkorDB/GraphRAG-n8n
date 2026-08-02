@@ -1,14 +1,16 @@
-# Copilot / AI agent instructions for `n8n-nodes-falkordb-graphrag`
+# Copilot / AI agent instructions for `@falkordb/n8n-nodes-graphrag`
 
 Guidance for GitHub Copilot and other AI agents working in this repository. It encodes
 the team's engineering conventions so changes land clean on the first try. Human
 contributors should follow it too.
 
 This package is an **n8n community node** that wraps the
-[FalkorDB GraphRAG-Server](https://github.com/FalkorDB/GraphRAG-Server). It ships two
-nodes — a pipeline node (`graphRagAction`) and an AI Agent tool node (`graphRag`) — plus
-one credential, over a small HTTP client in `src/GraphRagClient.ts`. It is written in
-**TypeScript**, built with `tsc` + `gulp`, tested with **Vitest**, and linted with
+[FalkorDB GraphRAG-Server](https://github.com/FalkorDB/GraphRAG-Server). It ships a
+**single** node (`graphRagAction`) plus one credential, over a small HTTP client in
+`src/GraphRagClient.ts`. The node declares `usableAsTool: true`, so n8n derives the
+`graphRagActionTool` variant automatically — never hand-write a second node class for
+it. It is written in
+**TypeScript**, built with `tsc` + `scripts/copy-icons.mjs`, tested with **Vitest**, and linted with
 **ESLint** (`eslint-plugin-n8n-nodes-base`) and **Prettier**.
 
 ## Golden rule: drive everything through `just`
@@ -29,7 +31,7 @@ invocation), so `just` and `npm run` never drift.
 | `just done` | Definition-of-done gate: `ci` **plus** `coverage` and `spellcheck`. |
 | `just fmt` / `just fmt-check` | Format with Prettier / check formatting. |
 | `just lint` / `just lintfix` | Lint with the n8n-nodes-base rules / auto-fix. |
-| `just build` | Compile to `dist/` and copy node icons. |
+| `just build` | Compile to `dist/` and copy node + credential icons. |
 | `just test` / `just test-one <filter>` | Run Vitest once / a single file or name. |
 | `just coverage` | V8 coverage report (matches the `check-coverage` CI job). |
 | `just spellcheck` | Spellcheck the Markdown docs. |
@@ -110,6 +112,7 @@ Keep code **tidy, simple, and efficient**. Match the surrounding style (tabs, do
 quotes, semicolons — enforced by Prettier). Comment only what genuinely needs
 clarification, not the obvious. Prefer the smallest change that fully solves the problem.
 
-The `graphRag` node is an **AI Agent tool** (`inputs: []`, `outputs: ['ai_tool']`); the
-two n8n-nodes-base rules that assume a regular node are intentionally disabled for it in
-`.eslintrc.js` — don't "fix" its connections to `['main']`.
+`GraphRagAction.node.ts` declares its connections with the `NodeConnectionTypes` enum,
+which two n8n-nodes-base rules cannot statically resolve. Those rules are intentionally
+disabled for that file in `.eslintrc.js` — don't "fix" the connections to literal
+`['main']` strings to silence them.
