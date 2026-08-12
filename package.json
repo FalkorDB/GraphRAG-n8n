@@ -49,7 +49,7 @@
     "@typescript-eslint/parser": "^8.62.0",
     "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^8.57.1",
-    "eslint-plugin-n8n-nodes-base": "^1.16.3",
+    "eslint-plugin-n8n-nodes-base": "^2.0.0",
     "n8n-workflow": "*",
     "prettier": "^3.3.2",
     "typescript": "^6.0.3",
